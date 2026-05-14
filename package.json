@@ -1,0 +1,18 @@
+{
+  "name": "out-2",
+  "type": "module",
+  "version": "0.0.1",
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview"
+  },
+  "dependencies": {
+    "@astrojs/vercel": "^10.0.7",
+    "astro": "^6.3.2",
+    "microcms-js-sdk": "^3.4.0"
+  },
+  "devDependencies": {
+    "playwright": "^1.60.0"
+  }
+}

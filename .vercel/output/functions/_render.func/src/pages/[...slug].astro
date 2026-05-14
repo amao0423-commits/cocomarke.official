@@ -1,0 +1,18 @@
+---
+import fs from 'node:fs';
+import path from 'node:path';
+
+const { slug } = Astro.params;
+const base = path.join(process.cwd(), 'old');
+
+let htmlFile = path.join(base, String(slug), 'index.html');
+if (!fs.existsSync(htmlFile)) {
+  htmlFile = path.join(base, String(slug) + '.html');
+}
+if (!fs.existsSync(htmlFile)) {
+  return Astro.redirect('/404');
+}
+
+const html = fs.readFileSync(htmlFile, 'utf-8');
+return new Response(html, { headers: { 'Content-Type': 'text/html; charset=utf-8' } });
+---

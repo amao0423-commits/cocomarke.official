@@ -1,0 +1,24 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install *)",
+      "Bash(npx astro *)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:4321/)",
+      "Bash(python3 -c ' *)",
+      "Bash(pkill -f \"astro dev\")",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:4321/contact/)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:4321/about/)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" -H \"rsc: 1\" http://localhost:4321/)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:4321/blog/)",
+      "Bash(curl -s -w \"\\\\nContent-Type: %{content_type}\\\\n\" -H \"rsc: 1\" http://localhost:4321/)",
+      "Bash(open http://localhost:4321/)",
+      "Bash(npx playwright *)",
+      "Bash(node /Users/andoaoi/Downloads/out-2/scripts/capture.mjs)",
+      "Bash(/usr/bin/curl -s -o /dev/null -w \"%{http_code}\" http://localhost:4321/)",
+      "Bash(/usr/bin/curl -s -o /dev/null -w \"%{http_code}\" http://localhost:4321/about/)",
+      "Bash(/usr/bin/curl -s -o /dev/null -w \"%{http_code}\" http://localhost:4321/blog/)",
+      "Bash(/usr/bin/curl -s -o /dev/null -w \"%{http_code}\" http://localhost:4321/contact/)",
+      "Bash(/usr/bin/curl -s -w \"\\\\nContent-Type: %{content_type}\\\\n\" -H \"rsc: 1\" http://localhost:4321/)"
+    ]
+  }
+}

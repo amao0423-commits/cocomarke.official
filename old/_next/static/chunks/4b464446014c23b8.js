@@ -1,0 +1,1 @@
+(globalThis.TURBOPACK||(globalThis.TURBOPACK=[])).push(["object"==typeof document?document.currentScript:void 0,36768,t=>{"use strict";var e=t.i(43476);t.s(["default",0,()=>(0,e.jsxs)("div",{children:[(0,e.jsx)("div",{className:"text-center text-5xl font-bold mb-3",children:"404"}),(0,e.jsx)("div",{className:"text-center text-xl font-bold",children:"Not Found"})]})])}]);

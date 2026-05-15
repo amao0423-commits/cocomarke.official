@@ -1,6 +1,0 @@
-1:"$Sreact.fragment"
-2:I[97367,["/_next/static/chunks/ff1a16fafef87110.js","/_next/static/chunks/5d2013ea39502e59.js"],"ViewportBoundary"]
-3:I[97367,["/_next/static/chunks/ff1a16fafef87110.js","/_next/static/chunks/5d2013ea39502e59.js"],"MetadataBoundary"]
-4:"$Sreact.suspense"
-5:I[27201,["/_next/static/chunks/ff1a16fafef87110.js","/_next/static/chunks/5d2013ea39502e59.js"],"IconMark"]
-0:{"buildId":"urqnafl86qGp3Z-WTG4dy","rsc":["$","$1","h",{"children":[null,["$","$L2",null,{"children":[["$","meta","0",{"charSet":"utf-8"}],["$","meta","1",{"name":"viewport","content":"width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"}]]}],["$","div",null,{"hidden":true,"children":["$","$L3",null,{"children":["$","$4",null,{"name":"Next.Metadata","children":[["$","title","0",{"children":"COCOマーケ | Instagram運用代行 月額5万円～集客に強いSNS運用"}],["$","meta","1",{"name":"description","content":"COCOマーケは、3,000社の支援実績と独自アルゴリズム解析で成果を出すInstagram運用代行サービスです。戦略設計から投稿制作・分析改善まで、プロのチームがトータルサポートします。"}],["$","link","2",{"rel":"icon","href":"/common/favicon.png"}],["$","$L5","3",{}]]}]}]}],["$","meta",null,{"name":"next-size-adjust","content":""}]]}],"loading":null,"isPartial":false}

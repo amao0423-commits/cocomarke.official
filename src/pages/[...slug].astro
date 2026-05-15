@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 const { slug } = Astro.params;
-const base = path.join(process.cwd(), 'old');
+const base = path.join(process.cwd(), 'templates');
 
 let htmlFile = path.join(base, String(slug), 'index.html');
 if (!fs.existsSync(htmlFile)) {

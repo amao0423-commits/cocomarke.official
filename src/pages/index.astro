@@ -14,7 +14,7 @@ const [faqs, newsItems] = await Promise.all([
   }).catch(() => [] as News[]),
 ]);
 
-let html = fs.readFileSync(path.join(process.cwd(), 'old', 'index.html'), 'utf-8');
+let html = fs.readFileSync(path.join(process.cwd(), 'templates', 'index.html'), 'utf-8');
 
 // --- お知らせ置き換え ---
 if (newsItems.length > 0) {

@@ -6,7 +6,7 @@ import { client, formatDate, escapeHtml, mapBlog, type Blog } from '../../lib/mi
 const { id } = Astro.params;
 
 if (id === 'sample') {
-  const sampleHtml = fs.readFileSync(path.join(process.cwd(), 'old', 'blog', 'sample', 'index.html'), 'utf-8');
+  const sampleHtml = fs.readFileSync(path.join(process.cwd(), 'templates', 'blog', 'sample', 'index.html'), 'utf-8');
   return new Response(sampleHtml, { headers: { 'Content-Type': 'text/html; charset=utf-8' } });
 }
 
@@ -18,7 +18,7 @@ try {
   return Astro.redirect('/blog/');
 }
 
-let html = fs.readFileSync(path.join(process.cwd(), 'old', 'blog', 'sample', 'index.html'), 'utf-8');
+let html = fs.readFileSync(path.join(process.cwd(), 'templates', 'blog', 'sample', 'index.html'), 'utf-8');
 
 const date = formatDate(blog.day ?? blog.publishedAt);
 const cat = typeof blog.category === 'string' ? blog.category : blog.category?.name ?? '';

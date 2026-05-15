@@ -8,7 +8,7 @@ const blogs = await cached<Blog[]>('blogs', async () => {
   return res.contents.map(mapBlog);
 }).catch(() => [] as Blog[]);
 
-let html = fs.readFileSync(path.join(process.cwd(), 'old', 'blog', 'index.html'), 'utf-8');
+let html = fs.readFileSync(path.join(process.cwd(), 'templates', 'blog', 'index.html'), 'utf-8');
 
 // --- ブログ記事グリッドを置き換え ---
 if (blogs.length > 0) {

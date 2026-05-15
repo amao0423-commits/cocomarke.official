@@ -24,12 +24,11 @@ type RawFaq = {
 
 type RawBlog = {
   id: string;
-  'Dfh-RAEXhk'?: string;
-  'hMY2e6Qbn5'?: string;
-  'KQLMRsXR9K'?: { url: string; width?: number; height?: number };
-  '_gMXTrzqYY'?: { name: string } | string;
-  'aCv3n1gD5L'?: string;
-  'gC18Q5qHix'?: string;
+  title?: string;
+  content?: string;
+  eyecatch?: { url: string; width?: number; height?: number; alt?: string };
+  category?: { name: string } | string;
+  day?: string;
   publishedAt: string;
 };
 
@@ -83,12 +82,12 @@ export function mapFaq(raw: RawFaq): Faq {
 export function mapBlog(raw: RawBlog): Blog {
   return {
     id: raw.id,
-    title: raw['Dfh-RAEXhk'] ?? '',
-    content: raw['hMY2e6Qbn5'],
-    eyecatch: raw['KQLMRsXR9K'],
-    category: raw['_gMXTrzqYY'],
-    body: raw['aCv3n1gD5L'],
-    day: raw['gC18Q5qHix'],
+    title: raw.title ?? '',
+    content: raw.content ? raw.content.replace(/<[^>]*>/g, '').slice(0, 200) : undefined,
+    eyecatch: raw.eyecatch,
+    category: raw.category,
+    body: raw.content,
+    day: raw.day,
     publishedAt: raw.publishedAt,
   };
 }

@@ -1,14 +1,13 @@
 ---
-import fs from 'node:fs';
-import path from 'node:path';
+import blogIndexHtml from '../../../templates/blog/index.html?raw';
 import { client, formatDate, escapeHtml, cached, mapBlog, type Blog } from '../../lib/microcms';
 
-const blogs = await cached<Blog[]>('blogs', async () => {
-  const res = await client.getList<any>({ endpoint: 'blogs', queries: { limit: 100, orders: '-publishedAt' } });
+const blogs = await cached<Blog[]>('blogs-list', async () => {
+  const res = await client.getList<any>({ endpoint: 'blogs', queries: { limit: 100, orders: '-publishedAt', fields: 'id,title,day,publishedAt,eyecatch,category' } });
   return res.contents.map(mapBlog);
 }).catch(() => [] as Blog[]);
 
-let html = fs.readFileSync(path.join(process.cwd(), 'templates', 'blog', 'index.html'), 'utf-8');
+let html = blogIndexHtml;
 
 // --- ブログ記事グリッドを置き換え ---
 if (blogs.length > 0) {

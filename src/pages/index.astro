@@ -1,6 +1,5 @@
 ---
-import fs from 'node:fs';
-import path from 'node:path';
+import indexHtml from '../../templates/index.html?raw';
 import { client, formatDate, escapeHtml, cached, mapFaq, mapNews, type Faq, type News } from '../lib/microcms';
 
 const [faqs, newsItems] = await Promise.all([
@@ -14,7 +13,7 @@ const [faqs, newsItems] = await Promise.all([
   }).catch(() => [] as News[]),
 ]);
 
-let html = fs.readFileSync(path.join(process.cwd(), 'templates', 'index.html'), 'utf-8');
+let html = indexHtml;
 
 // --- お知らせ置き換え ---
 if (newsItems.length > 0) {

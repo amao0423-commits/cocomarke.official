@@ -5,3 +5,5 @@ dist/
 .DS_Store
 .vercel/
 .astro/
+.eyecatch-tmp/
+scripts/.preview/

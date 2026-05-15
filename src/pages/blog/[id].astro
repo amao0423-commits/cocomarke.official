@@ -1,12 +1,10 @@
 ---
-import fs from 'node:fs';
-import path from 'node:path';
-import { client, formatDate, escapeHtml, mapBlog, type Blog } from '../../lib/microcms';
+import sampleHtml from '../../../templates/blog/sample/index.html?raw';
+import { client, formatDate, escapeHtml, cached, mapBlog, type Blog } from '../../lib/microcms';
 
 const { id } = Astro.params;
 
 if (id === 'sample') {
-  const sampleHtml = fs.readFileSync(path.join(process.cwd(), 'templates', 'blog', 'sample', 'index.html'), 'utf-8');
   return new Response(sampleHtml, { headers: { 'Content-Type': 'text/html; charset=utf-8' } });
 }
 
@@ -18,28 +16,218 @@ try {
   return Astro.redirect('/blog/');
 }
 
-let html = fs.readFileSync(path.join(process.cwd(), 'templates', 'blog', 'sample', 'index.html'), 'utf-8');
+// Fetch 5 recent articles for おすすめ記事 section
+const recentBlogs = await cached<Blog[]>('blogs-list', async () => {
+  const res = await client.getList<any>({
+    endpoint: 'blogs',
+    queries: { limit: 100, orders: '-publishedAt', fields: 'id,title,day,publishedAt,eyecatch,category' },
+  });
+  return res.contents.map(mapBlog);
+}).catch(() => [] as Blog[]);
+
+const relatedBlogs = recentBlogs.filter(b => b.id !== id).slice(0, 5);
+
+let html = sampleHtml;
 
 const date = formatDate(blog.day ?? blog.publishedAt);
 const cat = typeof blog.category === 'string' ? blog.category : blog.category?.name ?? '';
-const img = blog.eyecatch?.url ?? '/images/blog-01.jpg';
+const eyecatchUrl = blog.eyecatch?.url;
 
 html = html.replace('>第3階層ページ<', '>' + escapeHtml(blog.title) + '<');
 html = html.replace('>0000.00.00<', '>' + date + '<');
 html = html.replace(/(<h1[^>]*>).*?(<\/h1>)/s, '$1' + escapeHtml(blog.title) + '$2');
+if (cat) html = html.replaceAll('>ダミーカテゴリ<', '>' + escapeHtml(cat) + '<');
 
-if (blog.eyecatch?.url) {
-  html = html.replace(/src="\/images\/blog-01\.jpg"/, 'src="' + blog.eyecatch.url + '"');
+// Replace ALL blog-01.jpg placeholder occurrences (src and srcset) with eyecatch
+if (eyecatchUrl) {
+  html = html.replaceAll('/images/blog-01.jpg', eyecatchUrl);
 }
+
+// --- Strip WIX-scraped metadata from body HTML ---
+function cleanWixContent(body: string): string {
+  // Remove the first <h1> (duplicate article title)
+  body = body.replace(/<h1[^>]*>[\s\S]*?<\/h1>/, '');
+
+  // Remove elements containing Japanese date (e.g. 2025年10月27日)
+  body = body.replace(/<(?:p|li|div|span)[^>]*>[^<]*\d{4}年\d{1,2}月\d{1,2}日[^<]*<\/(?:p|li|div|span)>/g, '');
+
+  // Remove 読了時間 line
+  body = body.replace(/<[^>]+>[^<]*読了時間[^<]*<\/[^>]+>/g, '');
+
+  // Remove 閲覧数 element (label + possible sibling number)
+  body = body.replace(/<[^>]+>[^<]*閲覧数[^<]*<\/[^>]+>/g, '');
+
+  // Remove コメント element
+  body = body.replace(/<[^>]+>[^<]*件のコメント[^<]*<\/[^>]+>/g, '');
+
+  // Remove いいね！ element
+  body = body.replace(/<[^>]+>[^<]*いいね！[^<]*<\/[^>]+>/g, '');
+
+  // Remove 更新日 line
+  body = body.replace(/<[^>]+>[^<]*更新日[：:][^<]*<\/[^>]+>/g, '');
+
+  // Remove standalone numeric elements (view count, like count numbers like 551, 0)
+  body = body.replace(/<(?:p|li|div|span)[^>]*>\s*\d{1,7}\s*<\/(?:p|li|div|span)>/g, '');
+
+  // Clean up empty <ul> / <ol> left over
+  body = body.replace(/<(?:ul|ol)[^>]*>\s*<\/(?:ul|ol)>/g, '');
+
+  return body;
+}
+
+// --- CSS for article body, headings, and TOC ---
+const articleCss = `<style>
+html { scroll-behavior: smooth; }
+.cms-body {
+  font-size: 15px;
+  line-height: 1.85;
+  color: #333;
+}
+/* ── TOC Box ── */
+.toc-box {
+  background: #f0f6ff;
+  border: 1px solid #c2d7f5;
+  border-radius: 10px;
+  padding: 20px 24px 20px 36px;
+  margin: 0 0 2.2em;
+  display: inline-block;
+  min-width: 220px;
+  max-width: 100%;
+}
+.toc-box li {
+  margin-bottom: 8px;
+  color: #1a1a1a;
+  list-style: disc;
+}
+.toc-box a {
+  color: #005bea !important;
+  text-decoration: none !important;
+  font-size: 14px;
+  line-height: 1.6;
+}
+.toc-box a:hover {
+  text-decoration: underline !important;
+  opacity: 1 !important;
+}
+.toc-box .toc-box {
+  margin: 6px 0 0;
+  padding: 0 0 0 20px;
+  border: none;
+  background: transparent;
+  border-radius: 0;
+}
+/* ── Headings ── */
+.cms-body h2 {
+  background: #e8f0fe;
+  padding: 10px 16px 10px 14px;
+  border-left: 5px solid #005bea;
+  border-radius: 0 6px 6px 0;
+  font-size: 22px;
+  font-weight: 800;
+  color: #1a1a1a;
+  line-height: 1.5;
+  margin: 2.2em 0 1em;
+  scroll-margin-top: 100px;
+}
+.cms-body h3 {
+  background: #f0f6ff;
+  padding: 7px 14px 7px 12px;
+  border-left: 4px solid #4a90e2;
+  border-radius: 0 6px 6px 0;
+  font-size: 18px;
+  font-weight: 700;
+  color: #1a1a1a;
+  line-height: 1.5;
+  margin: 1.8em 0 0.8em;
+  scroll-margin-top: 100px;
+}
+.cms-body h4 {
+  font-size: 16px;
+  font-weight: 700;
+  color: #1a1a1a;
+  margin: 1.4em 0 0.6em;
+  scroll-margin-top: 100px;
+}
+/* ── Body text ── */
+.cms-body p { margin-bottom: 1em; }
+.cms-body ol, .cms-body ul { margin: 1em 0; padding-left: 2em; }
+.cms-body li { margin-bottom: 0.5em; line-height: 1.75; }
+.cms-body a { color: #005bea; text-decoration: underline; }
+.cms-body a:hover { opacity: 0.75; }
+.cms-body img { max-width: 100%; height: auto; margin: 1em 0; border-radius: 8px; }
+.cms-body table { border-collapse: collapse; width: 100%; margin: 1.5em 0; }
+.cms-body th, .cms-body td { border: 1px solid #d0d7e3; padding: 8px 12px; text-align: left; }
+.cms-body th { background: #e8f0fe; font-weight: 700; }
+.cms-body blockquote { border-left: 4px solid #4a90e2; background: #f5f9ff; margin: 1.5em 0; padding: 12px 16px; color: #555; border-radius: 0 6px 6px 0; }
+</style>`;
+
+// --- JS: detect TOC and fix anchor IDs ---
+const tocJs = `<script>
+(function() {
+  var body = document.querySelector('.cms-body');
+  if (!body) return;
+  // Find first list containing anchor links → TOC
+  var lists = body.querySelectorAll('ol, ul');
+  var toc = null;
+  for (var i = 0; i < lists.length; i++) {
+    if (lists[i].querySelector('a[href^="#"]')) { toc = lists[i]; break; }
+  }
+  if (!toc) return;
+  toc.classList.add('toc-box');
+  // Fix heading IDs to match TOC links
+  var links = toc.querySelectorAll('a[href^="#"]');
+  var headings = Array.from(body.querySelectorAll('h2, h3, h4')).filter(function(h) {
+    return !toc.contains(h);
+  });
+  var hi = 0;
+  links.forEach(function(link) {
+    var anchor = link.getAttribute('href').slice(1);
+    if (!document.getElementById(anchor) && hi < headings.length) {
+      headings[hi].id = anchor;
+    }
+    hi++;
+  });
+})();
+</script>`;
 
 const bodyHtml = blog.body ?? blog.content ?? '';
 if (bodyHtml) {
+  const cleanedBody = cleanWixContent(bodyHtml);
   const BODY_START = '<div class="pt-20 flex flex-col gap-20">';
   const BODY_END   = '</div></article>';
   const si = html.indexOf(BODY_START);
   const ei = html.indexOf(BODY_END, si);
   if (si !== -1 && ei !== -1) {
-    html = html.slice(0, si) + BODY_START + '<div class="cms-body">' + bodyHtml + '</div>' + BODY_END + html.slice(ei + BODY_END.length);
+    html = html.slice(0, si) + BODY_START + '<div class="cms-body">' + cleanedBody + '</div>' + BODY_END + html.slice(ei + BODY_END.length);
+  }
+}
+
+// --- Replace おすすめ記事 section with recent articles ---
+if (relatedBlogs.length > 0) {
+  const RECO_START = '<div class="flex gap-6 overflow-x-auto pb-4">';
+  const RECO_END   = '</div></div></section>';
+  const ri = html.indexOf(RECO_START);
+  if (ri !== -1) {
+    const re = html.indexOf(RECO_END, ri);
+    if (re !== -1) {
+      const cards = relatedBlogs.map(b => {
+        const bDate = formatDate(b.day ?? b.publishedAt);
+        const bCat  = typeof b.category === 'string' ? b.category : b.category?.name ?? '';
+        const bImg  = b.eyecatch?.url ?? '/images/blog-01.jpg';
+        return (
+          '<a class="shrink-0 w-[220px] flex flex-col gap-2 hover:opacity-70 transition-opacity" href="/blog/' + b.id + '/">' +
+          '<div class="w-full aspect-[384/200] relative rounded-[10px] overflow-hidden">' +
+          '<img alt="' + escapeHtml(b.title) + '" loading="lazy" class="object-cover" src="' + bImg + '" style="position:absolute;height:100%;width:100%;inset:0;object-fit:cover;"></div>' +
+          '<div class="flex items-start gap-2">' +
+          '<span class="text-base font-black font-en leading-[1.5] text-black shrink-0">' + bDate + '</span>' +
+          (bCat ? '<span class="text-xs text-[#005bea] border border-[#005bea] rounded-[10px] px-4 py-[2px] leading-[1.4] whitespace-nowrap">' + escapeHtml(bCat) + '</span>' : '') +
+          '</div>' +
+          '<p class="text-lg font-semibold text-[#005bea] leading-[1.7] line-clamp-2">' + escapeHtml(b.title) + '</p>' +
+          '</a>'
+        );
+      }).join('');
+      html = html.slice(0, ri) + RECO_START + cards + RECO_END + html.slice(re + RECO_END.length);
+    }
   }
 }
 
@@ -48,7 +236,8 @@ html = html.replace('/blog/sample/', '/blog/' + (id ?? '') + '/');
 
 const canonical = '<link rel="canonical" href="https://www.cocomake.com/blog/' + (id ?? '') + '/">';
 const gaTag = '<!-- Google tag (gtag.js) --><script async src="https://www.googletagmanager.com/gtag/js?id=G-K79MPJ7QYT"></script><script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag(\'js\',new Date());gtag(\'config\',\'G-K79MPJ7QYT\');</script>';
-html = html.replace('</head>', canonical + gaTag + '</head>');
+html = html.replace('</head>', canonical + gaTag + articleCss + '</head>');
+html = html.replace('</body>', tocJs + '</body>');
 
 return new Response(html, { headers: { 'Content-Type': 'text/html; charset=utf-8' } });
 ---

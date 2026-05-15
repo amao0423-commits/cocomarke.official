@@ -1,18 +1,22 @@
 ---
-import fs from 'node:fs';
-import path from 'node:path';
+import aboutHtml from '../../templates/about/index.html?raw';
+import contactHtml from '../../templates/contact/index.html?raw';
+import privacyHtml from '../../templates/privacy/index.html?raw';
+import thanksHtml from '../../templates/contact/thanks/index.html?raw';
 
 const { slug } = Astro.params;
-const base = path.join(process.cwd(), 'templates');
 
-let htmlFile = path.join(base, String(slug), 'index.html');
-if (!fs.existsSync(htmlFile)) {
-  htmlFile = path.join(base, String(slug) + '.html');
-}
-if (!fs.existsSync(htmlFile)) {
+const pages: Record<string, string> = {
+  'about': aboutHtml,
+  'contact': contactHtml,
+  'privacy': privacyHtml,
+  'contact/thanks': thanksHtml,
+};
+
+const html = pages[String(slug)];
+if (!html) {
   return Astro.redirect('/404');
 }
 
-const html = fs.readFileSync(htmlFile, 'utf-8');
 return new Response(html, { headers: { 'Content-Type': 'text/html; charset=utf-8' } });
 ---

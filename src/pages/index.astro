@@ -28,7 +28,10 @@ if (newsItems.length > 0) {
     const newNews = newsItems.map((item, i) =>
       '<div class="flex flex-col lg:flex-row gap-2 lg:gap-4 items-start py-6 border-b border-[#8d8d8d] ' + (i === 0 ? 'border-t' : '') + '">' +
       '<p class="text-base text-[#005BEA] font-normal leading-[30px] tracking-[0.03em] whitespace-nowrap">' + formatDate(item.day ?? item.publishedAt) + '</p>' +
-      '<p class="flex-1 text-base leading-[30px] tracking-[0.03em]">' + escapeHtml(item.title) + '</p></div>'
+      '<div class="flex-1">' +
+      '<p class="text-base leading-[30px] tracking-[0.03em]">' + escapeHtml(item.title) + '</p>' +
+      (item.content ? '<p class="text-sm text-gray-600 leading-[1.7] mt-1">' + escapeHtml(item.content) + '</p>' : '') +
+      '</div></div>'
     ).join('');
     html = pre + newNews + closing + rest.slice(faqIdx);
   }

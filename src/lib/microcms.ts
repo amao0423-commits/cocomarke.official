@@ -9,17 +9,16 @@ export const client = createClient({
 
 type RawNews = {
   id: string;
-  'o4BqI-XqAN'?: string;
-  'Ww95pBmMm_'?: string;
-  '7Fn39Ufj8p'?: string;
-  name?: string;
+  title?: string;
+  day?: string;
+  content?: string;
   publishedAt: string;
 };
 
 type RawFaq = {
   id: string;
-  '_CFp2S-EBL'?: string;
-  'JeorWP9LcJ'?: string;
+  title?: string;
+  content?: string;
   publishedAt: string;
 };
 
@@ -39,6 +38,7 @@ type RawBlog = {
 export type News = {
   id: string;
   title: string;
+  content?: string;
   day?: string;
   publishedAt: string;
 };
@@ -65,8 +65,9 @@ export type Blog = {
 export function mapNews(raw: RawNews): News {
   return {
     id: raw.id,
-    title: raw['Ww95pBmMm_'] ?? raw.name ?? '',
-    day: raw['o4BqI-XqAN'],
+    title: raw.title ?? '',
+    content: raw.content,
+    day: raw.day,
     publishedAt: raw.publishedAt,
   };
 }
@@ -74,8 +75,8 @@ export function mapNews(raw: RawNews): News {
 export function mapFaq(raw: RawFaq): Faq {
   return {
     id: raw.id,
-    question: raw['_CFp2S-EBL'] ?? '',
-    answer: raw['JeorWP9LcJ'] ?? '',
+    question: raw.title ?? '',
+    answer: raw.content ?? '',
   };
 }
 

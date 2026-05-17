@@ -99,15 +99,15 @@ export const POST: APIRoute = async ({ request }) => {
             <table width="100%" cellpadding="0" cellspacing="0"
               style="background:#f5f9fe;border-radius:8px;padding:20px 24px;margin-bottom:24px;">
               <tr>
-                <td style="padding:6px 0;font-size:14px;color:#555;width:160px;vertical-align:top;">■ お問い合わせ区分</td>
+                <td style="padding:6px 0;font-size:14px;color:#333;font-weight:bold;width:160px;vertical-align:top;">■ お問い合わせ区分</td>
                 <td style="padding:6px 0;font-size:14px;color:#333;font-weight:bold;">${esc(inquiryTypeJa)}</td>
               </tr>
               <tr>
-                <td style="padding:6px 0;font-size:14px;color:#555;vertical-align:top;">■ 担当者名</td>
+                <td style="padding:6px 0;font-size:14px;color:#333;font-weight:bold;vertical-align:top;">■ 担当者名</td>
                 <td style="padding:6px 0;font-size:14px;color:#333;">${esc(name)}</td>
               </tr>
               <tr>
-                <td style="padding:6px 0;font-size:14px;color:#555;vertical-align:top;">■ お問い合わせ内容</td>
+                <td style="padding:6px 0;font-size:14px;color:#333;font-weight:bold;vertical-align:top;">■ お問い合わせ内容</td>
                 <td style="padding:6px 0;font-size:14px;color:#333;white-space:pre-wrap;">${esc(message)}</td>
               </tr>
             </table>

@@ -100,13 +100,6 @@ export const POST: APIRoute = async ({ request }) => {
     <tr><td align="center">
       <table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;background:#ffffff;border-radius:12px;overflow:hidden;">
 
-        <!-- ヘッダー（ロゴ画像なし） -->
-        <tr>
-          <td style="background:linear-gradient(90deg,#00c6fb,#0965f6);padding:28px 32px;text-align:center;">
-            <p style="margin:0;color:#ffffff;font-size:22px;font-weight:bold;letter-spacing:0.08em;">COCOマーケ</p>
-          </td>
-        </tr>
-
         <!-- 本文 -->
         <tr>
           <td style="padding:32px 32px 8px;">
@@ -168,8 +161,7 @@ export const POST: APIRoute = async ({ request }) => {
                 <td style="padding:12px 0 6px;font-size:13px;color:#555;border-top:1px solid #e0eaf7;margin-top:12px;">
                   <strong style="color:#333;">■ 本メールにお心当たりが無い方へ</strong><br>
                   本メールは、COCOマーケのお問い合わせフォームに記載をいただいたお客様にお送りしています。<br>
-                  このメールにお心当たりのない場合は
-                  <a href="mailto:info@cocomarke.com" style="color:#005bea;text-decoration:none;">こちらにご連絡</a> お願いいたします。<br>
+                  心当たりのない場合は下記のメールにご連絡をお願いいたします。<br>
                   <a href="mailto:info@cocomarke.com" style="color:#005bea;text-decoration:none;">info@cocomarke.com</a>
                 </td>
               </tr>

@@ -96,7 +96,13 @@ if (topBlogs.length > 0) {
     const brest = html.slice(bsi + BLOG_SPLIT.length);
     const bai = brest.indexOf(BLOG_AFTER);
     if (bai !== -1) {
-      const newBlogCards = topBlogs.slice(0, 3).map(blog => {
+      // day フィールド優先で降順ソート → 常に最新3件
+      const latest3 = [...topBlogs].sort((a, b) => {
+        const da = a.day ?? a.publishedAt;
+        const db = b.day ?? b.publishedAt;
+        return db.localeCompare(da);
+      }).slice(0, 3);
+      const newBlogCards = latest3.map(blog => {
         const bDate = formatDate(blog.day ?? blog.publishedAt);
         const bCat  = typeof blog.category === 'string' ? blog.category : blog.category?.name ?? '';
         const bImg  = blog.eyecatch?.url ?? '/images/blog-01.jpg';

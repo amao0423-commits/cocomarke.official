@@ -1,8 +1,8 @@
 ---
 import indexHtml from '../../templates/index.html?raw';
-import { client, formatDate, escapeHtml, cached, mapFaq, mapNews, type Faq, type News } from '../lib/microcms';
+import { client, formatDate, escapeHtml, cached, mapFaq, mapNews, mapBlog, type Faq, type News, type Blog } from '../lib/microcms';
 
-const [faqs, newsItems] = await Promise.all([
+const [faqs, newsItems, topBlogs] = await Promise.all([
   cached<Faq[]>('faq', async () => {
     const res = await client.getList<any>({ endpoint: 'faq', queries: { limit: 100 } });
     return res.contents.map(mapFaq);
@@ -11,6 +11,10 @@ const [faqs, newsItems] = await Promise.all([
     const res = await client.getList<any>({ endpoint: 'news', queries: { limit: 10, orders: '-publishedAt' } });
     return res.contents.map(mapNews);
   }).catch(() => [] as News[]),
+  cached<Blog[]>('blogs-list', async () => {
+    const res = await client.getList<any>({ endpoint: 'blogs', queries: { limit: 100, orders: '-publishedAt', fields: 'id,title,day,publishedAt,eyecatch,category' } });
+    return res.contents.map(mapBlog);
+  }).catch(() => [] as Blog[]),
 ]);
 
 let html = indexHtml;
@@ -55,6 +59,38 @@ if (faqs.length > 0) {
       '<div class="hidden px-5 pb-5 lg:px-6 lg:pb-6 text-sm lg:text-base leading-relaxed text-gray-700">' + item.answer + '</div></div>'
     ).join('');
     html = pre + newFaqs + rest.slice(ci);
+  }
+}
+
+// --- お役立ち情報（トップページブログ3件）置き換え ---
+if (topBlogs.length > 0) {
+  const BLOG_SPLIT = '<div class="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-6 mb-10 lg:mb-16">';
+  const BLOG_AFTER = '</div><div class="flex justify-center">';
+  const bsi = html.indexOf(BLOG_SPLIT);
+  if (bsi !== -1) {
+    const brest = html.slice(bsi + BLOG_SPLIT.length);
+    const bai = brest.indexOf(BLOG_AFTER);
+    if (bai !== -1) {
+      const newBlogCards = topBlogs.slice(0, 3).map(blog => {
+        const bDate = formatDate(blog.day ?? blog.publishedAt);
+        const bCat  = typeof blog.category === 'string' ? blog.category : blog.category?.name ?? '';
+        const bImg  = blog.eyecatch?.url ?? '/images/blog-01.jpg';
+        return (
+          '<a class="block hover:opacity-90 transition-opacity" href="/blog/' + blog.id + '/">' +
+          '<div class="flex flex-col shadow-[0px_0px_24px_0px_rgba(128,170,218,0.3)] rounded-[10px] lg:rounded-[20px] overflow-hidden bg-white">' +
+          '<div class="relative w-full aspect-[384/200]">' +
+          '<img alt="' + escapeHtml(blog.title) + '" loading="lazy" class="object-cover" src="' + bImg + '" style="position:absolute;height:100%;width:100%;inset:0;object-fit:cover;"></div>' +
+          '<div class="bg-white p-3 lg:p-6 flex flex-col gap-1 lg:gap-2">' +
+          '<div class="flex flex-col lg:flex-row gap-1 lg:gap-2 items-start">' +
+          '<span class="text-xs lg:text-base font-black leading-[1.5] text-black">' + bDate + '</span>' +
+          (bCat ? '<span class="text-xs text-[#005bea] border border-[#005bea] rounded-[10px] px-3 py-[2px] leading-[1.4] whitespace-nowrap">' + escapeHtml(bCat) + '</span>' : '') +
+          '</div>' +
+          '<p class="text-xs lg:text-lg font-extrabold leading-[1.6] tracking-[0.03em] text-[#005bea] line-clamp-2">' + escapeHtml(blog.title) + '</p>' +
+          '</div></div></a>'
+        );
+      }).join('');
+      html = html.slice(0, bsi) + BLOG_SPLIT + newBlogCards + BLOG_AFTER + brest.slice(bai + BLOG_AFTER.length);
+    }
   }
 }
 

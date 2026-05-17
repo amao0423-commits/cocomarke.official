@@ -1,1 +1,0 @@
-(globalThis.TURBOPACK||(globalThis.TURBOPACK=[])).push(["object"==typeof document?document.currentScript:void 0,8821,e=>{"use strict";var t=e.i(43476);e.s(["default",0,()=>(0,t.jsxs)("div",{children:[(0,t.jsx)("div",{className:"text-center text-5xl font-bold mb-3",children:"500"}),(0,t.jsx)("div",{className:"text-center text-xl font-bold",children:"Server Error"})]})])}]);

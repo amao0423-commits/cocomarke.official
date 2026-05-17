@@ -15,7 +15,7 @@ const pages: Record<string, string> = {
 
 const html = pages[String(slug)];
 if (!html) {
-  return Astro.redirect('/404');
+  return new Response('Not Found', { status: 404 });
 }
 
 return new Response(html, { headers: { 'Content-Type': 'text/html; charset=utf-8' } });

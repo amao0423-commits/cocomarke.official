@@ -3,46 +3,123 @@ import blogIndexHtml from '../../../templates/blog/index.html?raw';
 import { client, formatDate, escapeHtml, cached, mapBlog, type Blog } from '../../lib/microcms';
 
 const blogs = await cached<Blog[]>('blogs-list', async () => {
-  const res = await client.getList<any>({ endpoint: 'blogs', queries: { limit: 100, orders: '-publishedAt', fields: 'id,title,day,publishedAt,eyecatch,category' } });
+  const res = await client.getList<any>({
+    endpoint: 'blogs',
+    queries: { limit: 100, orders: '-publishedAt', fields: 'id,title,day,publishedAt,eyecatch,category' },
+  });
   return res.contents.map(mapBlog);
 }).catch(() => [] as Blog[]);
 
+// Sort by day desc, fallback to publishedAt
+const sorted = [...blogs].sort((a, b) => {
+  const da = a.day ?? a.publishedAt;
+  const db = b.day ?? b.publishedAt;
+  return db.localeCompare(da);
+});
+
 let html = blogIndexHtml;
 
-// --- ブログ記事グリッドを置き換え ---
-if (blogs.length > 0) {
+if (sorted.length > 0) {
+  // Extract unique categories (preserve defined order first)
+  const DEFINED_ORDER = ['検索対策', 'SNS戦略', '運用の基本', '活用事例', '最新情報', '集客'];
+  const catsInUse = new Set<string>();
+  sorted.forEach(b => {
+    const c = typeof b.category === 'string' ? b.category : (b.category as any)?.name;
+    if (c) catsInUse.add(c);
+  });
+  const sortedCats = [
+    ...DEFINED_ORDER.filter(c => catsInUse.has(c)),
+    ...[...catsInUse].filter(c => !DEFINED_ORDER.includes(c)),
+  ];
+
+  // --- Replace category tabs ---
+  const TAB_START = '<div class="lg:hidden relative">';
+  const TAB_END_MARKER = 'rounded-r-[40px] ">集客</button></div>';
+  const tsi = html.indexOf(TAB_START);
+  const tei = html.indexOf(TAB_END_MARKER);
+  if (tsi !== -1 && tei !== -1) {
+    const desktopTabs =
+      '<div class="hidden lg:flex rounded-[50px] overflow-hidden bg-white">' +
+      '<button class="cat-tab flex-1 py-4 text-center text-lg font-semibold leading-[1.7] tracking-[0.03em] whitespace-nowrap transition-colors bg-[#005bea] text-white rounded-l-[40px] border-r border-[#b8c5bd]" data-cat="all">すべて</button>' +
+      sortedCats.map((c, i) => {
+        const isLast = i === sortedCats.length - 1;
+        return `<button class="cat-tab flex-1 py-4 text-center text-lg font-semibold leading-[1.7] tracking-[0.03em] whitespace-nowrap transition-colors bg-[#f5f9fe] text-[#041840] ${isLast ? 'rounded-r-[40px]' : ''} border-r border-[#b8c5bd]" data-cat="${escapeHtml(c)}">${escapeHtml(c)}</button>`;
+      }).join('') +
+      '</div>';
+
+    const mobileDropdown =
+      '<div class="lg:hidden relative">' +
+      '<button id="mobile-cat-btn" class="w-full flex items-center justify-between px-4 py-3 bg-white text-[#041840] rounded-full text-sm font-semibold border border-gray-300">' +
+      '<span id="mobile-cat-label">すべて</span>' +
+      '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4 transition-transform"><path d="m6 9 6 6 6-6"></path></svg>' +
+      '</button>' +
+      '<div id="mobile-cat-dropdown" class="hidden absolute top-full left-0 right-0 bg-white border border-gray-200 rounded-lg shadow-lg z-10 mt-1">' +
+      '<button class="mobile-cat-tab w-full text-left px-4 py-2 text-sm hover:bg-gray-50" data-cat="all">すべて</button>' +
+      sortedCats.map(c =>
+        `<button class="mobile-cat-tab w-full text-left px-4 py-2 text-sm hover:bg-gray-50" data-cat="${escapeHtml(c)}">${escapeHtml(c)}</button>`
+      ).join('') +
+      '</div></div>';
+
+    html = html.slice(0, tsi) + mobileDropdown + desktopTabs + html.slice(tei + TAB_END_MARKER.length);
+  }
+
+  // --- Replace article grid ---
   const SPLIT = '<div class="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-6 mt-10 lg:mt-16">';
-  const AFTER  = '</div><div class="flex justify-center mt-16">';
+  const AFTER = '</div><div class="flex justify-center mt-16">';
   const si = html.indexOf(SPLIT);
   if (si !== -1) {
-    const pre = html.slice(0, si + SPLIT.length);
     const rest = html.slice(si + SPLIT.length);
     const ai = rest.indexOf(AFTER);
-    const fromAfter = rest.slice(ai);
-
-    const newArticles = blogs.map(blog => {
+    const newArticles = sorted.map(blog => {
       const date = formatDate(blog.day ?? blog.publishedAt);
-      const cat = typeof blog.category === 'string' ? blog.category : blog.category?.name ?? '';
+      const cat = typeof blog.category === 'string' ? blog.category : (blog.category as any)?.name ?? '';
       const img = blog.eyecatch?.url ?? '/images/blog-01.jpg';
       return (
-        '<a class="block hover:opacity-90 transition-opacity" href="/blog/' + blog.id + '/">' +
-        '<div class="rounded-[10px] lg:rounded-[20px] overflow-hidden shadow-[0px_0px_24px_0px_rgba(128,170,218,0.3)] bg-white">' +
-        '<div class="w-full aspect-[384/200] relative">' +
-        '<img alt="' + escapeHtml(blog.title) + '" loading="lazy" class="object-cover" src="' + img + '" style="position:absolute;height:100%;width:100%;inset:0;"></div>' +
-        '<div class="bg-white p-3 lg:p-6 flex flex-col gap-1 lg:gap-2">' +
-        '<div class="flex flex-col lg:flex-row gap-1 lg:gap-2">' +
-        '<span class="text-xs lg:text-base font-black font-[Roboto] text-black">' + date + '</span>' +
-        (cat ? '<span class="self-start border border-[#005bea] text-[#005bea] text-[10px] lg:text-xs px-2 lg:px-4 py-0 lg:py-0.5 rounded-[10px]">' + escapeHtml(cat) + '</span>' : '') +
-        '</div>' +
-        '<p class="text-xs lg:text-lg font-extrabold leading-[1.6] tracking-[0.03em] text-[#005bea] line-clamp-2">' + escapeHtml(blog.title) + '</p>' +
-        (blog.content ? '<p class="text-xs lg:text-base leading-[1.7] tracking-[0.03em] text-black line-clamp-3 lg:line-clamp-4">' + escapeHtml(blog.content) + '</p>' : '') +
-        '</div></div></a>'
+        `<a class="blog-card block hover:opacity-90 transition-opacity" href="/blog/${blog.id}/" data-category="${escapeHtml(cat)}">` +
+        `<div class="rounded-[10px] lg:rounded-[20px] overflow-hidden shadow-[0px_0px_24px_0px_rgba(128,170,218,0.3)] bg-white">` +
+        `<div class="w-full aspect-[384/200] relative">` +
+        `<img alt="${escapeHtml(blog.title)}" loading="lazy" class="object-cover" src="${img}" style="position:absolute;height:100%;width:100%;inset:0;"></div>` +
+        `<div class="bg-white p-3 lg:p-6 flex flex-col gap-1 lg:gap-2">` +
+        `<div class="flex flex-col lg:flex-row gap-1 lg:gap-2">` +
+        `<span class="text-xs lg:text-base font-black font-[Roboto] text-black">${date}</span>` +
+        (cat ? `<span class="self-start border border-[#005bea] text-[#005bea] text-[10px] lg:text-xs px-2 lg:px-4 py-0 lg:py-0.5 rounded-[10px]">${escapeHtml(cat)}</span>` : '') +
+        `</div>` +
+        `<p class="text-xs lg:text-lg font-extrabold leading-[1.6] tracking-[0.03em] text-[#005bea] line-clamp-2">${escapeHtml(blog.title)}</p>` +
+        (blog.content ? `<p class="text-xs lg:text-base leading-[1.7] tracking-[0.03em] text-black line-clamp-3 lg:line-clamp-4">${escapeHtml(blog.content)}</p>` : '') +
+        `</div></div></a>`
       );
     }).join('');
-
-    html = pre + newArticles + fromAfter;
+    html = html.slice(0, si + SPLIT.length) + newArticles + rest.slice(ai);
   }
 }
+
+// --- Category filter + mobile dropdown JS ---
+const filterJs = `(function(){
+var cards=document.querySelectorAll('.blog-card');
+var tabs=document.querySelectorAll('.cat-tab');
+var mBtn=document.getElementById('mobile-cat-btn');
+var mDrop=document.getElementById('mobile-cat-dropdown');
+var mLabel=document.getElementById('mobile-cat-label');
+var mTabs=document.querySelectorAll('.mobile-cat-tab');
+function filter(cat){
+  cards.forEach(function(c){c.style.display=(cat==='all'||c.dataset.category===cat)?'':'none';});
+  tabs.forEach(function(t){
+    var a=t.dataset.cat===cat;
+    t.style.background=a?'#005bea':'';
+    t.style.color=a?'#fff':'';
+    t.style.borderRadius=a&&t===tabs[0]?'40px 0 0 40px':a&&t===tabs[tabs.length-1]?'0 40px 40px 0':'';
+  });
+  if(mLabel)mLabel.textContent=cat==='all'?'すべて':cat;
+}
+tabs.forEach(function(t){t.addEventListener('click',function(){filter(this.dataset.cat);});});
+if(mBtn&&mDrop){
+  mBtn.addEventListener('click',function(e){e.stopPropagation();mDrop.classList.toggle('hidden');});
+  mTabs.forEach(function(t){t.addEventListener('click',function(){filter(this.dataset.cat);mDrop.classList.add('hidden');});});
+  document.addEventListener('click',function(){mDrop.classList.add('hidden');});
+}
+})();`;
+
+html = html.replace('</body>', `<script>${filterJs}</script></body>`);
 
 return new Response(html, { headers: { 'Content-Type': 'text/html; charset=utf-8' } });
 ---

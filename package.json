@@ -14,6 +14,7 @@
     "nodemailer": "^8.0.7"
   },
   "devDependencies": {
+    "@anthropic-ai/sdk": "^0.96.0",
     "@types/nodemailer": "^8.0.0",
     "playwright": "^1.60.0"
   }

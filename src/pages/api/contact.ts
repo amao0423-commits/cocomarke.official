@@ -206,6 +206,46 @@ export const POST: APIRoute = async ({ request }) => {
       html: autoHtml,
     });
 
+    // Slack通知
+    const slackWebhookUrl = import.meta.env.SLACK_WEBHOOK_URL;
+    if (slackWebhookUrl) {
+      const slackPayload = {
+        blocks: [
+          {
+            type: 'header',
+            text: { type: 'plain_text', text: '📩 COCOマーケ お問い合わせがありました', emoji: true },
+          },
+          {
+            type: 'section',
+            fields: [
+              { type: 'mrkdwn', text: `*区分*\n${inquiryTypeJa}` },
+              { type: 'mrkdwn', text: `*担当者名*\n${name}` },
+              { type: 'mrkdwn', text: `*会社・組織名*\n${company || '—'}` },
+              { type: 'mrkdwn', text: `*フリガナ*\n${furigana}` },
+              { type: 'mrkdwn', text: `*メールアドレス*\n${email}` },
+              { type: 'mrkdwn', text: `*お電話番号*\n${phone}` },
+              ...(url ? [{ type: 'mrkdwn', text: `*HP URL*\n${url}` }] : []),
+              ...(referralJa ? [{ type: 'mrkdwn', text: `*きっかけ*\n${referralJa}` }] : []),
+            ],
+          },
+          {
+            type: 'section',
+            text: { type: 'mrkdwn', text: `*お問い合わせ内容*\n${message}` },
+          },
+          { type: 'divider' },
+          {
+            type: 'context',
+            elements: [{ type: 'mrkdwn', text: `返信先: <mailto:${email}|${email}>` }],
+          },
+        ],
+      };
+      await fetch(slackWebhookUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(slackPayload),
+      }).catch(err => console.error('Slack notify error:', err));
+    }
+
     return new Response(JSON.stringify({ success: true }), { status: 200 });
   } catch (err) {
     console.error('Mail error:', err);

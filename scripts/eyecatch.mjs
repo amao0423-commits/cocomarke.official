@@ -9,8 +9,9 @@ import { readFileSync } from 'fs';
 import { fileURLToPath } from 'url';
 import { join, dirname } from 'path';
 
-const __dir  = dirname(fileURLToPath(import.meta.url));
-const ICON_B64 = readFileSync(join(__dir, '../old/images/coco-icon.png')).toString('base64');
+const __dir   = dirname(fileURLToPath(import.meta.url));
+// fotter-logo.png: 304×80px 白ロゴ（透明背景）
+const LOGO_B64 = readFileSync(join(__dir, '../old/images/fotter-logo.png')).toString('base64');
 
 // ─── カテゴリ別カラー定義 ──────────────────────────────────────────────────
 // gradFrom: 背景グラデーション（左上）/ accent: バッジ・ライン色
@@ -103,6 +104,10 @@ function buildSvg(title, category) {
       fill="#FFFFFF" dominant-baseline="auto">${esc(line)}</text>`
   ).join('\n  ');
 
+  // fotter-logo.png は 304×80 → 高さ48pxに縮小すると幅182px
+  const LOGO_H = 48;
+  const LOGO_W = Math.round(LOGO_H * 304 / 80); // 182px
+
   return `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="${W}" height="${H}">
   <defs>
     <!-- カテゴリカラーグラデーション背景 -->
@@ -110,15 +115,6 @@ function buildSvg(title, category) {
       <stop offset="0%"   stop-color="${gradFrom}" stop-opacity="1"/>
       <stop offset="100%" stop-color="#04040C"     stop-opacity="1"/>
     </radialGradient>
-    <!-- アクセントライン用グラデーション -->
-    <linearGradient id="accentGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-      <stop offset="0%"   stop-color="${accent}" stop-opacity="1"/>
-      <stop offset="100%" stop-color="${accent}" stop-opacity="0"/>
-    </linearGradient>
-    <!-- アイコン丸クリップ -->
-    <clipPath id="iconClip">
-      <circle cx="44" cy="44" r="44"/>
-    </clipPath>
   </defs>
 
   <!-- 背景 -->
@@ -141,13 +137,10 @@ function buildSvg(title, category) {
   <!-- タイトル -->
   ${textEls}
 
-  <!-- ロゴ（右下）: アイコン48px + テキスト -->
-  <image x="${W - 230}" y="${H - 68}" width="48" height="48"
-    href="data:image/png;base64,${ICON_B64}"/>
-  <text x="${W - 170}" y="${H - 34}"
-    font-family="${fontFamily}"
-    font-size="26" font-weight="700" fill="#FFFFFF"
-    dominant-baseline="middle">COCOマーケ</text>
+  <!-- ロゴ（右下）: fotter-logo.png（白・透明背景）-->
+  <image x="${W - 5 - 20 - LOGO_W}" y="${H - 20 - LOGO_H}"
+    width="${LOGO_W}" height="${LOGO_H}"
+    href="data:image/png;base64,${LOGO_B64}"/>
 
 </svg>`;
 }

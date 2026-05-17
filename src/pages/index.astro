@@ -8,7 +8,7 @@ const [faqs, newsItems, topBlogs] = await Promise.all([
     return res.contents.map(mapFaq);
   }).catch(() => [] as Faq[]),
   cached<News[]>('news', async () => {
-    const res = await client.getList<any>({ endpoint: 'news', queries: { limit: 10, orders: '-publishedAt' } });
+    const res = await client.getList<any>({ endpoint: 'news', queries: { limit: 100, orders: '-day' } });
     return res.contents.map(mapNews);
   }).catch(() => [] as News[]),
   cached<Blog[]>('blogs-list', async () => {
@@ -19,7 +19,7 @@ const [faqs, newsItems, topBlogs] = await Promise.all([
 
 let html = indexHtml;
 
-// --- お知らせ置き換え ---
+// --- お知らせ置き換え（6件/ページ・ドットナビ付き）---
 if (newsItems.length > 0) {
   const SPLIT = 'お知らせ</h2></div><div class="flex flex-col">';
   const si = html.indexOf(SPLIT);
@@ -28,15 +28,40 @@ if (newsItems.length > 0) {
     const rest = html.slice(si + SPLIT.length);
     const faqIdx = rest.indexOf('<div id="faq"');
     const closing = rest.slice(0, faqIdx).slice(rest.slice(0, faqIdx).lastIndexOf('</div></section>'));
-    const newNews = newsItems.map((item, i) =>
-      '<div class="flex flex-col lg:flex-row gap-2 lg:gap-4 items-start py-6 border-b border-[#8d8d8d] ' + (i === 0 ? 'border-t' : '') + '">' +
-      '<p class="text-base text-[#005BEA] font-normal leading-[30px] tracking-[0.03em] whitespace-nowrap">' + formatDate(item.day ?? item.publishedAt) + '</p>' +
-      '<div class="flex-1">' +
-      '<p class="text-base leading-[30px] tracking-[0.03em]">' + escapeHtml(item.title) + '</p>' +
-      (item.content ? '<p class="text-sm text-gray-600 leading-[1.7] mt-1">' + escapeHtml(item.content) + '</p>' : '') +
-      '</div></div>'
+
+    const PAGE_SIZE = 6;
+    const pages: News[][] = [];
+    for (let i = 0; i < newsItems.length; i += PAGE_SIZE) {
+      pages.push(newsItems.slice(i, i + PAGE_SIZE));
+    }
+
+    const buildRows = (page: News[], pageIdx: number) =>
+      page.map((item, i) =>
+        '<div class="flex flex-col lg:flex-row gap-2 lg:gap-4 items-start py-6 border-b border-[#8d8d8d] ' + (i === 0 ? 'border-t' : '') + '">' +
+        '<p class="text-base text-[#005BEA] font-normal leading-[30px] tracking-[0.03em] whitespace-nowrap">' + formatDate(item.day ?? item.publishedAt) + '</p>' +
+        '<div class="flex-1">' +
+        '<p class="text-base leading-[30px] tracking-[0.03em]">' + escapeHtml(item.title) + '</p>' +
+        (item.content ? '<p class="text-sm text-gray-600 leading-[1.7] mt-1">' + escapeHtml(item.content) + '</p>' : '') +
+        '</div></div>'
+      ).join('');
+
+    const pagesHtml = pages.map((page, pi) =>
+      '<div class="news-page" data-page="' + pi + '"' + (pi > 0 ? ' style="display:none"' : '') + '>' +
+      buildRows(page, pi) +
+      '</div>'
     ).join('');
-    html = pre + newNews + closing + rest.slice(faqIdx);
+
+    const dotsHtml = pages.length > 1
+      ? '<div class="flex justify-center gap-3 mt-6">' +
+        pages.map((_, i) =>
+          '<button class="news-dot w-2.5 h-2.5 rounded-full transition-colors duration-200 ' +
+          (i === 0 ? 'bg-[#005bea]' : 'bg-[#ccc]') +
+          '" data-target="' + i + '" aria-label="' + (i + 1) + 'ページ目"></button>'
+        ).join('') +
+        '</div>'
+      : '';
+
+    html = pre + pagesHtml + dotsHtml + closing + rest.slice(faqIdx);
   }
 }
 
@@ -94,11 +119,12 @@ if (topBlogs.length > 0) {
   }
 }
 
-// --- FAQ accordion JS ---
+// --- FAQ accordion + お知らせページネーション JS ---
 const scriptOpen = ['<', 's', 'c', 'r', 'i', 'p', 't', '>'].join('');
 const scriptClose = ['<', '/', 's', 'c', 'r', 'i', 'p', 't', '>'].join('');
 const accordionFn = "document.querySelectorAll('#faq button[aria-expanded]').forEach(function(b){b.addEventListener('click',function(){var p=this.nextElementSibling,o=this.getAttribute('aria-expanded')==='true';this.setAttribute('aria-expanded',String(!o));p.classList.toggle('hidden');var v=this.querySelector('.faq-v');if(v)v.style.display=o?'':'none';});});";
-html = html.replace('</body>', scriptOpen + accordionFn + scriptClose + '</body>');
+const newsPaginationFn = "(function(){var pages=document.querySelectorAll('.news-page'),dots=document.querySelectorAll('.news-dot');if(!pages.length||!dots.length)return;function show(n){pages.forEach(function(p,i){p.style.display=i===n?'block':'none';});dots.forEach(function(d,i){d.style.background=i===n?'#005bea':'#ccc';});}dots.forEach(function(d){d.addEventListener('click',function(){show(parseInt(this.dataset.target));});});})();";
+html = html.replace('</body>', scriptOpen + accordionFn + newsPaginationFn + scriptClose + '</body>');
 
 return new Response(html, { headers: { 'Content-Type': 'text/html; charset=utf-8' } });
 ---

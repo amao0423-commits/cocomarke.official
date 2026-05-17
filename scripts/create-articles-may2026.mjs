@@ -8,11 +8,13 @@
  */
 
 import Anthropic from '@anthropic-ai/sdk';
+import { uploadEyecatch } from './eyecatch.mjs';
 
 const ANTHROPIC_API_KEY   = process.env.ANTHROPIC_API_KEY;
 const SVC                 = process.env.MICROCMS_SERVICE_DOMAIN ?? 'cocomarke';
 const API_KEY             = process.env.MICROCMS_WRITE_API_KEY ?? process.env.MICROCMS_API_KEY;
-const PEXELS_API_KEY      = process.env.PEXELS_API_KEY;
+const PEXELS_API_KEY      = process.env.PEXELS_API_KEY; // 中間画像用（オプション）
+const SLACK_WEBHOOK_URL   = process.env.SLACK_WEBHOOK_URL;
 
 const BASE_URL  = `https://${SVC}.microcms.io/api/v1/blogs`;
 const MEDIA_URL = `https://${SVC}.microcms-management.io/api/v1/media`;
@@ -204,8 +206,7 @@ HTMLテーブル（<table>タグ）を使って一覧表形式で見やすく整
 
 // ─── ヘルパー関数 ──────────────────────────────────────────────────────────
 
-async function fetchImage(query) {
-  // 1. Pexels（APIキーがある場合）
+async function fetchMidImage(query) {
   if (PEXELS_API_KEY) {
     try {
       const res = await fetch(
@@ -217,58 +218,39 @@ async function fetchImage(query) {
       if (photo) return { url: photo.src.large2x || photo.src.large, alt: photo.alt || query };
     } catch {}
   }
-
-  // 2. Unsplash Source（リダイレクト追跡）
-  try {
-    const q = query.split(' ').slice(0, 3).map(w => encodeURIComponent(w)).join(',');
-    const res = await fetch(
-      `https://source.unsplash.com/featured/1200x630/?${q}`,
-      { redirect: 'follow', headers: { 'User-Agent': 'Mozilla/5.0' }, signal: AbortSignal.timeout(10000) }
-    );
-    if (res.ok && res.url && !res.url.includes('source.unsplash.com')) {
-      return { url: res.url, alt: query };
-    }
-  } catch {}
-
-  // 3. picsum（フォールバック）
   const seed = [...query].reduce((a, c) => a + c.charCodeAt(0), 0) % 1000;
   return { url: `https://picsum.photos/seed/${seed}/1200/630`, alt: query };
 }
 
-async function uploadEyecatch(imageInfo) {
-  if (!imageInfo) return null;
-
-  // まず Management API でアップロードを試みる
-  try {
-    const imgRes = await fetch(imageInfo.url, { signal: AbortSignal.timeout(15000) });
-    if (!imgRes.ok) throw new Error('image fetch failed');
-    const buf = await imgRes.arrayBuffer();
-    const ct  = imgRes.headers.get('content-type') ?? 'image/jpeg';
-    const ext = ct.includes('png') ? 'png' : 'jpg';
-
-    const form = new FormData();
-    form.append('file', new Blob([buf], { type: ct }), `eyecatch.${ext}`);
-
-    const upRes = await fetch(MEDIA_URL, {
-      method:  'POST',
-      headers: { 'X-MICROCMS-API-KEY': API_KEY },
-      body:    form,
-    });
-    if (upRes.ok) {
-      const data = await upRes.json();
-      if (data.url) {
-        console.log('  Image uploaded to microCMS:', data.url);
-        return { url: data.url };
-      }
-    } else {
-      console.warn('  Management API upload failed, using external URL as fallback');
-    }
-  } catch (e) {
-    console.warn('  Image upload error, using external URL:', e.message);
-  }
-
-  // フォールバック: 外部URLをそのまま設定
-  return { url: imageInfo.url };
+async function notifySlack(article, contentId) {
+  if (!SLACK_WEBHOOK_URL) return;
+  const publicUrl = `https://www.cocomarke.com/blog/${contentId}/`;
+  const payload = {
+    blocks: [
+      {
+        type: 'header',
+        text: { type: 'plain_text', text: '📝 COCOマーケ 記事が投稿されました', emoji: true },
+      },
+      {
+        type: 'section',
+        fields: [
+          { type: 'mrkdwn', text: `*タイトル*\n${article.titleJa}` },
+          { type: 'mrkdwn', text: `*カテゴリ*\n${article.category}` },
+          { type: 'mrkdwn', text: `*投稿日*\n${article.date}` },
+        ],
+      },
+      {
+        type: 'section',
+        text: { type: 'mrkdwn', text: `*URL*\n<${publicUrl}|${publicUrl}>` },
+      },
+    ],
+  };
+  await fetch(SLACK_WEBHOOK_URL, {
+    method:  'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body:    JSON.stringify(payload),
+  }).catch(err => console.warn('  Slack通知失敗:', err.message));
+  console.log('  Slack通知送信');
 }
 
 async function generateHTML(client, article) {
@@ -372,11 +354,18 @@ async function main() {
       console.log(`  DELETE ${article.deleteId}: ${delRes.status}`);
     }
 
-    // 2. 画像取得・アップロード
-    console.log('画像を取得中...');
-    const rawImage = await fetchImage(article.imageQuery);
-    console.log('  取得URL:', rawImage?.url ?? 'none');
-    const eyecatch = await uploadEyecatch(rawImage);
+    // 2. ブランドアイキャッチ生成・アップロード
+    console.log('アイキャッチを生成中...');
+    const eyecatchUrl = await uploadEyecatch({
+      title:         article.titleJa,
+      category:      article.category,
+      serviceDomain: SVC,
+      apiKey:        API_KEY,
+    }).catch(e => { console.warn('  eyecatch失敗:', e.message); return null; });
+
+    // 中間画像（記事本文に挿入）
+    console.log('中間画像を取得中...');
+    const rawImage = await fetchMidImage(article.imageQuery).catch(() => null);
 
     // 3. 記事HTML生成
     console.log('Claude で記事を生成中...');
@@ -429,13 +418,9 @@ async function main() {
 
     console.log(`${method} → ${endpoint}`);
 
-    // eyecatch フォーマットを順番に試す
-    const eyecatchCandidates = eyecatch
-      ? [
-          { url: eyecatch.url, width: 1200, height: 630 }, // フル形式
-          eyecatch.url,                                     // URL 文字列
-          undefined,                                        // eyecatch なし
-        ]
+    // eyecatch フォーマットを順番に試す（URLが返ったならそのまま文字列で）
+    const eyecatchCandidates = eyecatchUrl
+      ? [eyecatchUrl, undefined]
       : [undefined];
 
     let result;
@@ -452,7 +437,9 @@ async function main() {
     }
 
     const resultId = result.id ?? article.slug ?? article.existingId;
-    console.log(`完了: https://www.cocomarke.com/blog/${resultId}/`);
+    const doneUrl = `https://www.cocomarke.com/blog/${resultId}/`;
+    console.log(`完了: ${doneUrl}`);
+    await notifySlack(article, resultId);
   }
 
   console.log('\n✅ 全記事の作成・更新が完了しました');

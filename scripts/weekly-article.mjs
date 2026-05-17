@@ -4,6 +4,7 @@
  * - Avoids recently published topics (fetches recent articles first)
  * - Generates 8000+ char Japanese article with Claude (TOC, anchor links, citations)
  * - Inserts mid-article image
+ * - Generates branded eyecatch with eyecatch.mjs and uploads to microCMS
  * - Uploads to microCMS with English slug as content ID
  * - Sends email + Slack notification
  *
@@ -11,18 +12,19 @@
  *   ANTHROPIC_API_KEY
  *   MICROCMS_SERVICE_DOMAIN   (e.g. "cocomarke")
  *   MICROCMS_WRITE_API_KEY    (write permission required)
- *   PEXELS_API_KEY            (optional — falls back to Unsplash/picsum)
+ *   SLACK_WEBHOOK_URL         (optional — Slack notification)
  *   SMTP_PASS                 (optional — email notification)
  *   ARTICLE_DATE              (optional — override date, YYYY-MM-DD)
  */
 
 import Anthropic from '@anthropic-ai/sdk';
 import nodemailer from 'nodemailer';
+import { uploadEyecatch } from './eyecatch.mjs';
 
 const ANTHROPIC_API_KEY      = process.env.ANTHROPIC_API_KEY;
 const MICROCMS_SERVICE_DOMAIN = process.env.MICROCMS_SERVICE_DOMAIN ?? 'cocomarke';
 const MICROCMS_WRITE_API_KEY  = process.env.MICROCMS_WRITE_API_KEY ?? process.env.MICROCMS_API_KEY;
-const PEXELS_API_KEY          = process.env.PEXELS_API_KEY;
+const SLACK_WEBHOOK_URL       = process.env.SLACK_WEBHOOK_URL;
 const SMTP_PASS               = process.env.SMTP_PASS;
 const MEDIA_URL               = `https://${MICROCMS_SERVICE_DOMAIN}.microcms-management.io/api/v1/media`;
 
@@ -52,8 +54,8 @@ async function fetchPageText(url) {
   }
 }
 
-async function fetchImage(query) {
-  // 1. Pexels（APIキーがある場合）
+async function fetchMidArticleImage(query) {
+  // Pexels（APIキーがある場合）
   if (PEXELS_API_KEY) {
     try {
       const res = await fetch(
@@ -66,46 +68,45 @@ async function fetchImage(query) {
     } catch {}
   }
 
-  // 2. Unsplash Source（リダイレクト追跡）
-  try {
-    const q = query.split(' ').slice(0, 3).map(w => encodeURIComponent(w)).join(',');
-    const res = await fetch(
-      `https://source.unsplash.com/featured/1200x630/?${q}`,
-      { redirect: 'follow', headers: { 'User-Agent': 'Mozilla/5.0' }, signal: AbortSignal.timeout(10000) }
-    );
-    if (res.ok && res.url && !res.url.includes('source.unsplash.com')) {
-      return { url: res.url, alt: query };
-    }
-  } catch {}
-
-  // 3. picsum（フォールバック）
+  // picsum（フォールバック）
   const seed = [...query].reduce((a, c) => a + c.charCodeAt(0), 0) % 1000;
   return { url: `https://picsum.photos/seed/${seed}/1200/630`, alt: query };
 }
 
-async function uploadEyecatch(imageInfo) {
-  if (!imageInfo) return null;
-  try {
-    const imgRes = await fetch(imageInfo.url, { signal: AbortSignal.timeout(15000) });
-    if (!imgRes.ok) throw new Error('fetch failed');
-    const buf = await imgRes.arrayBuffer();
-    const ct  = imgRes.headers.get('content-type') ?? 'image/jpeg';
-    const ext = ct.includes('png') ? 'png' : 'jpg';
-    const form = new FormData();
-    form.append('file', new Blob([buf], { type: ct }), `eyecatch.${ext}`);
-    const upRes = await fetch(MEDIA_URL, {
-      method:  'POST',
-      headers: { 'X-MICROCMS-API-KEY': MICROCMS_WRITE_API_KEY },
-      body:    form,
-    });
-    if (upRes.ok) {
-      const data = await upRes.json();
-      if (data.url) { console.log('  eyecatch uploaded:', data.url); return data.url; }
-    }
-  } catch (e) {
-    console.warn('  eyecatch upload failed:', e.message);
-  }
-  return imageInfo.url; // フォールバック: 外部 URL
+async function notifySlack({ title, category, keyword, contentId, publicUrl, today }) {
+  if (!SLACK_WEBHOOK_URL) return;
+  const payload = {
+    blocks: [
+      {
+        type: 'header',
+        text: { type: 'plain_text', text: '📝 COCOマーケ 記事が自動投稿されました', emoji: true },
+      },
+      {
+        type: 'section',
+        fields: [
+          { type: 'mrkdwn', text: `*タイトル*\n${title}` },
+          { type: 'mrkdwn', text: `*カテゴリ*\n${category}` },
+          { type: 'mrkdwn', text: `*キーワード*\n${keyword}` },
+          { type: 'mrkdwn', text: `*投稿日*\n${today}` },
+        ],
+      },
+      {
+        type: 'section',
+        text: { type: 'mrkdwn', text: `*URL*\n<${publicUrl}|${publicUrl}>` },
+      },
+      { type: 'divider' },
+      {
+        type: 'context',
+        elements: [{ type: 'mrkdwn', text: `microCMS ID: \`${contentId}\`` }],
+      },
+    ],
+  };
+  await fetch(SLACK_WEBHOOK_URL, {
+    method:  'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body:    JSON.stringify(payload),
+  }).catch(err => console.warn('  Slack通知失敗:', err.message));
+  console.log('  Slack通知送信');
 }
 
 async function fetchRecentArticles() {
@@ -181,11 +182,19 @@ async function main() {
 
   const slug = generateSlug(plan.titleEn || plan.keyword);
 
-  // 4. 画像取得・アップロード
-  console.log('画像を取得中...');
-  const rawImage = await fetchImage(plan.imageQuery || plan.keyword);
+  // 4. ブランドアイキャッチ生成・アップロード
+  console.log('アイキャッチを生成中...');
+  const eyecatchUrl = await uploadEyecatch({
+    title:         plan.titleJa,
+    category:      plan.category,
+    serviceDomain: MICROCMS_SERVICE_DOMAIN,
+    apiKey:        MICROCMS_WRITE_API_KEY,
+  }).catch(e => { console.warn('  eyecatch失敗:', e.message); return null; });
+
+  // 記事本文に挿入する中間画像（Pexels/picsum）
+  console.log('中間画像を取得中...');
+  const rawImage = await fetchMidArticleImage(plan.imageQuery || plan.keyword).catch(() => null);
   console.log('  URL:', rawImage?.url);
-  const eyecatchUrl = await uploadEyecatch(rawImage);
 
   // 5. 関連記事リンク（Claude に選ばせる）
   const relatedCandidates = recentArticles.slice(0, 20);
@@ -338,6 +347,9 @@ ${relatedHtml}
     });
     console.log('メール送信完了');
   }
+
+  // 10. Slack 通知
+  await notifySlack({ title: plan.titleJa, category: plan.category, keyword: plan.keyword, contentId, publicUrl, today });
 
   console.log('Done!');
 }

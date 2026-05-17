@@ -10,9 +10,11 @@
   "dependencies": {
     "@astrojs/vercel": "^10.0.7",
     "astro": "^6.3.2",
-    "microcms-js-sdk": "^3.4.0"
+    "microcms-js-sdk": "^3.4.0",
+    "nodemailer": "^8.0.7"
   },
   "devDependencies": {
+    "@types/nodemailer": "^8.0.0",
     "playwright": "^1.60.0"
   }
 }

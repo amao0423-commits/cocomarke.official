@@ -1,7 +1,7 @@
 import type { APIRoute } from 'astro';
 import { client, mapBlog } from '../lib/microcms';
 
-const BASE = 'https://www.cocomake.com';
+const BASE = 'https://www.cocomarke.com';
 
 const STATIC_PAGES = [
   { url: '/',          priority: '1.0', changefreq: 'weekly' },

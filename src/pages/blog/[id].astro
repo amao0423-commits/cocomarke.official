@@ -234,9 +234,25 @@ if (relatedBlogs.length > 0) {
 html = html.replace(/<title>.*?<\/title>/, '<title>' + escapeHtml(blog.title) + ' | COCOマーケ</title>');
 html = html.replace('/blog/sample/', '/blog/' + (id ?? '') + '/');
 
-const canonical = '<link rel="canonical" href="https://www.cocomake.com/blog/' + (id ?? '') + '/">';
+const pageUrl = 'https://www.cocomarke.com/blog/' + (id ?? '') + '/';
+const ogImage = eyecatchUrl ?? 'https://www.cocomarke.com/images/header-logo.png';
+const ogDesc = escapeHtml((blog.body ?? blog.content ?? '').replace(/<[^>]+>/g, '').slice(0, 120));
+const canonical = '<link rel="canonical" href="' + pageUrl + '">';
+const ogTags = [
+  '<meta property="og:type" content="article">',
+  '<meta property="og:url" content="' + pageUrl + '">',
+  '<meta property="og:title" content="' + escapeHtml(blog.title) + ' | COCOマーケ">',
+  '<meta property="og:description" content="' + ogDesc + '">',
+  '<meta property="og:image" content="' + ogImage + '">',
+  '<meta property="og:site_name" content="COCOマーケ">',
+  '<meta property="og:locale" content="ja_JP">',
+  '<meta name="twitter:card" content="summary_large_image">',
+  '<meta name="twitter:title" content="' + escapeHtml(blog.title) + ' | COCOマーケ">',
+  '<meta name="twitter:description" content="' + ogDesc + '">',
+  '<meta name="twitter:image" content="' + ogImage + '">',
+].join('');
 const gaTag = '<!-- Google tag (gtag.js) --><script async src="https://www.googletagmanager.com/gtag/js?id=G-K79MPJ7QYT"></script><script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag(\'js\',new Date());gtag(\'config\',\'G-K79MPJ7QYT\');</script>';
-html = html.replace('</head>', canonical + gaTag + articleCss + '</head>');
+html = html.replace('</head>', canonical + ogTags + gaTag + articleCss + '</head>');
 html = html.replace('</body>', tocJs + '</body>');
 
 return new Response(html, { headers: { 'Content-Type': 'text/html; charset=utf-8' } });

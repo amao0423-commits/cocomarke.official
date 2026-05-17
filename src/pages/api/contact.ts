@@ -69,50 +69,63 @@ export const POST: APIRoute = async ({ request }) => {
 
   const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
+  // Build all filled fields (stacked: label above value)
+  const lStyle = 'font-size:12px;color:#888;font-weight:bold;margin:0 0 4px;letter-spacing:0.05em;';
+  const vStyle = 'font-size:15px;color:#333;margin:0 0 18px;word-break:break-all;';
+  const allFields = [
+    { label: 'お問い合わせ区分', value: inquiryTypeJa },
+    { label: '会社・組織名', value: company },
+    { label: '担当者名', value: name },
+    { label: 'フリガナ', value: furigana },
+    { label: 'ホームページURL', value: url },
+    { label: 'メールアドレス', value: email },
+    { label: 'お電話番号', value: phone },
+    { label: '弊社を知ったきっかけ', value: referralJa },
+    { label: 'お問い合わせ内容', value: message },
+  ].filter(f => f.value);
+
+  const fieldsHtml = allFields
+    .map(f => `<p style="${lStyle}">■ ${esc(f.label)}</p><p style="${vStyle}">${esc(f.value)}</p>`)
+    .join('');
+
   const autoHtml = `<!DOCTYPE html>
 <html lang="ja">
-<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="format-detection" content="telephone=no,address=no,email=no">
+</head>
 <body style="margin:0;padding:0;background:#f5f9fe;font-family:'Hiragino Kaku Gothic ProN','Hiragino Sans',Meiryo,sans-serif;">
   <table width="100%" cellpadding="0" cellspacing="0" style="background:#f5f9fe;padding:32px 0;">
     <tr><td align="center">
       <table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;background:#ffffff;border-radius:12px;overflow:hidden;">
 
-        <!-- ヘッダー -->
+        <!-- ヘッダー（ロゴ画像なし） -->
         <tr>
-          <td style="background:linear-gradient(90deg,#00c6fb,#0965f6);padding:24px 32px;text-align:center;">
-            <img src="https://www.cocomarke.com/images/coco-icon.png" alt="COCOマーケ" width="64" height="64"
-              style="display:block;margin:0 auto 12px;border-radius:50%;background:#fff;padding:4px;">
-            <p style="margin:0;color:#ffffff;font-size:20px;font-weight:bold;letter-spacing:0.05em;">COCOマーケ</p>
+          <td style="background:linear-gradient(90deg,#00c6fb,#0965f6);padding:28px 32px;text-align:center;">
+            <p style="margin:0;color:#ffffff;font-size:22px;font-weight:bold;letter-spacing:0.08em;">COCOマーケ</p>
           </td>
         </tr>
 
         <!-- 本文 -->
         <tr>
-          <td style="padding:32px 32px 24px;">
+          <td style="padding:32px 32px 8px;">
             <p style="margin:0 0 8px;font-size:16px;color:#333;">${esc(name)} 様</p>
             <p style="margin:0 0 24px;font-size:15px;color:#333;line-height:1.8;">
               お問い合わせいただきありがとうございます。<br>
               以下の内容でお問い合わせを受け付けました。
             </p>
 
-            <!-- お問い合わせ詳細 -->
-            <table width="100%" cellpadding="0" cellspacing="0"
-              style="background:#f5f9fe;border-radius:8px;padding:20px 24px;margin-bottom:24px;">
+            <!-- お問い合わせ詳細（縦積みレイアウト） -->
+            <table width="100%" cellpadding="0" cellspacing="0">
               <tr>
-                <td style="padding:6px 0;font-size:14px;color:#333;font-weight:bold;width:160px;vertical-align:top;">■ お問い合わせ区分</td>
-                <td style="padding:6px 0;font-size:14px;color:#333;font-weight:bold;">${esc(inquiryTypeJa)}</td>
-              </tr>
-              <tr>
-                <td style="padding:6px 0;font-size:14px;color:#333;font-weight:bold;vertical-align:top;">■ 担当者名</td>
-                <td style="padding:6px 0;font-size:14px;color:#333;">${esc(name)}</td>
-              </tr>
-              <tr>
-                <td style="padding:6px 0;font-size:14px;color:#333;font-weight:bold;vertical-align:top;">■ お問い合わせ内容</td>
-                <td style="padding:6px 0;font-size:14px;color:#333;white-space:pre-wrap;">${esc(message)}</td>
+                <td style="background:#f5f9fe;border-radius:8px;padding:20px 24px 4px;margin-bottom:24px;">
+                  ${fieldsHtml}
+                </td>
               </tr>
             </table>
 
-            <p style="margin:0 0 4px;font-size:15px;color:#333;line-height:1.8;">
+            <p style="margin:16px 0 4px;font-size:15px;color:#333;line-height:1.8;">
               担当者より2〜3営業日以内にご連絡いたします。<br>
               しばらくお待ちくださいませ。
             </p>
@@ -123,7 +136,7 @@ export const POST: APIRoute = async ({ request }) => {
         <tr>
           <td style="padding:0 32px 24px;">
             <table width="100%" cellpadding="0" cellspacing="0"
-              style="border-top:1px solid #e0eaf7;padding-top:20px;">
+              style="border-top:1px solid #e0eaf7;padding-top:20px;margin-top:16px;">
               <tr>
                 <td style="padding:6px 0;font-size:14px;color:#333;">
                   <strong>■ COCOマーケ公式サイト</strong><br>
@@ -154,7 +167,7 @@ export const POST: APIRoute = async ({ request }) => {
               <tr>
                 <td style="padding:12px 0 6px;font-size:13px;color:#555;border-top:1px solid #e0eaf7;margin-top:12px;">
                   <strong style="color:#333;">■ 本メールにお心当たりが無い方へ</strong><br>
-                  本メールは、株式会社ホットセラー　COCOマーケお問い合わせフォームに記載をいただいたお客様にお送りしています。<br>
+                  本メールは、COCOマーケのお問い合わせフォームに記載をいただいたお客様にお送りしています。<br>
                   このメールにお心当たりのない場合は
                   <a href="mailto:info@cocomarke.com" style="color:#005bea;text-decoration:none;">こちらにご連絡</a> お願いいたします。<br>
                   <a href="mailto:info@cocomarke.com" style="color:#005bea;text-decoration:none;">info@cocomarke.com</a>
@@ -164,16 +177,18 @@ export const POST: APIRoute = async ({ request }) => {
           </td>
         </tr>
 
-        <!-- フッター -->
+        <!-- フッター（白背景・黒文字・リンクなし） -->
         <tr>
-          <td style="background:#1a1a2e;padding:24px 32px;text-align:center;">
-            <p style="margin:0 0 4px;color:#ffffff;font-size:15px;font-weight:bold;">株式会社ホットセラー</p>
-            <p style="margin:0 0 4px;color:#ccc;font-size:13px;">COCOマーケ　サービス窓口</p>
-            <p style="margin:0 0 4px;color:#ccc;font-size:13px;">〒104-0053　東京都中央区晴海1-8-10</p>
-            <p style="margin:0 0 12px;color:#ccc;font-size:13px;">晴海トリトンスクエアX棟８階</p>
-            <p style="margin:0 0 4px;font-size:13px;">
-              <a href="https://www.cocomarke.com/" style="color:#7db8f7;text-decoration:none;">HP：https://www.cocomarke.com/</a>
+          <td style="background:#ffffff;border-top:2px solid #e8f0fe;padding:24px 32px;text-align:center;">
+            <p style="margin:0 0 4px;color:#333;font-size:15px;font-weight:bold;">株式会社ホットセラー</p>
+            <p style="margin:0 0 4px;color:#555;font-size:13px;">COCOマーケ　サービス窓口</p>
+            <p style="margin:0 0 0;color:#555;font-size:13px;">
+              <a href="#" style="color:#555;text-decoration:none;pointer-events:none;" x-apple-data-detectors="false">〒104-0053　東京都中央区晴海1-8-10</a>
             </p>
+            <p style="margin:0 0 8px;color:#555;font-size:13px;">
+              <a href="#" style="color:#555;text-decoration:none;pointer-events:none;" x-apple-data-detectors="false">晴海トリトンスクエアX棟８階</a>
+            </p>
+            <p style="margin:0;color:#555;font-size:13px;">HP：https://www.cocomarke.com/</p>
           </td>
         </tr>
 

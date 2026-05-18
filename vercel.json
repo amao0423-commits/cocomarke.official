@@ -1,8 +1,13 @@
 {
   "redirects": [
     {
-      "source": "/post/:path*",
-      "destination": "/blog/:path*",
+      "source": "/post/:path+",
+      "destination": "/blog/:path+",
+      "permanent": true
+    },
+    {
+      "source": "/post",
+      "destination": "/blog/",
       "permanent": true
     },
     {
@@ -13,6 +18,46 @@
     {
       "source": "/blog/categories/:path*",
       "destination": "/blog/",
+      "permanent": true
+    },
+    {
+      "source": "/blog/tags/:path*",
+      "destination": "/blog/",
+      "permanent": true
+    },
+    {
+      "source": "/home",
+      "destination": "/",
+      "permanent": true
+    },
+    {
+      "source": "/blank",
+      "destination": "/",
+      "permanent": true
+    },
+    {
+      "source": "/blank-2",
+      "destination": "/",
+      "permanent": true
+    },
+    {
+      "source": "/blank-3",
+      "destination": "/",
+      "permanent": true
+    },
+    {
+      "source": "/search",
+      "destination": "/blog/",
+      "permanent": true
+    },
+    {
+      "source": "/_api/:path*",
+      "destination": "/",
+      "permanent": true
+    },
+    {
+      "source": "/_serverless/:path*",
+      "destination": "/",
       "permanent": true
     }
   ]

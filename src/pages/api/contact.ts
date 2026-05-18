@@ -1,5 +1,5 @@
 import type { APIRoute } from 'astro';
-import nodemailer from 'nodemailer';
+import { Resend } from 'resend';
 
 const INQUIRY_TYPE_MAP: Record<string, string> = {
   service: 'サービスについて',
@@ -37,21 +37,15 @@ export const POST: APIRoute = async ({ request }) => {
     return new Response(JSON.stringify({ success: false, error: 'invalid_email' }), { status: 400 });
   }
 
-  const smtpPass = import.meta.env.SMTP_PASS;
-  if (!smtpPass) {
+  const resendApiKey = import.meta.env.RESEND_API_KEY;
+  if (!resendApiKey) {
     return new Response(JSON.stringify({ success: false, error: 'config' }), { status: 500 });
   }
 
   const inquiryTypeJa = INQUIRY_TYPE_MAP[inquiryType] || inquiryType;
   const referralJa = REFERRAL_MAP[referral] || referral;
 
-  const transporter = nodemailer.createTransport({
-    host: 'mail1027.onamae.ne.jp',
-    port: 587,
-    secure: false,
-    requireTLS: true,
-    auth: { user: 'info@cocomake-guide.com', pass: smtpPass },
-  });
+  const resend = new Resend(resendApiKey);
 
   const adminBody = [
     'COCOマーケ お問い合わせがありました。',
@@ -151,9 +145,10 @@ export const POST: APIRoute = async ({ request }) => {
               </tr>
               <tr>
                 <td style="padding:12px 0 6px;font-size:14px;color:#333;">
-                  <strong>■ サービス窓口</strong><br>
-                  サービス・その他お問い合わせについてご相談などございましたら、<br>
-                  <a href="mailto:info@cocomake-guide.com" style="color:#005bea;text-decoration:none;">info@cocomake-guide.com</a> までご連絡頂ければ幸いです。<br>
+                  <strong>■ ご返信について</strong><br>
+                  本メールは自動送信のため、このメールへの返信はお受けできません。<br>
+                  ご返信の必要がある場合は、公式LINEよりご連絡ください。<br>
+                  <a href="https://page.line.me/386gtsnr?oat_content=url&amp;openQrModal=true" style="color:#005bea;text-decoration:none;">@cocomarke</a><br>
                   <span style="color:#555;font-size:13px;">※平日の営業時間9：30〜18：30に迅速に対応させていただきます。<br>
                   （土日祝日はお休みとなりますので、翌営業日の対応とさせていただきます）</span>
                 </td>
@@ -162,8 +157,8 @@ export const POST: APIRoute = async ({ request }) => {
                 <td style="padding:12px 0 6px;font-size:13px;color:#555;border-top:1px solid #e0eaf7;margin-top:12px;">
                   <strong style="color:#333;">■ 本メールにお心当たりが無い方へ</strong><br>
                   本メールは、COCOマーケのお問い合わせフォームに記載をいただいたお客様にお送りしています。<br>
-                  心当たりのない場合は下記のメールにご連絡をお願いいたします。<br>
-                  <a href="mailto:info@cocomake-guide.com" style="color:#005bea;text-decoration:none;">info@cocomake-guide.com</a>
+                  心当たりのない場合は、お手数ですが公式LINEよりご連絡をお願いいたします。<br>
+                  <a href="https://page.line.me/386gtsnr?oat_content=url&amp;openQrModal=true" style="color:#005bea;text-decoration:none;">@cocomarke</a>
                 </td>
               </tr>
             </table>
@@ -192,16 +187,16 @@ export const POST: APIRoute = async ({ request }) => {
 </html>`;
 
   try {
-    await transporter.sendMail({
-      from: '"COCOマーケ" <info@cocomake-guide.com>',
+    await resend.emails.send({
+      from: 'COCOマーケ <support@cocomarke.com>',
       to: 'info@cocomake-guide.com',
       replyTo: email,
       subject: '<HPお問い合わせ>',
       text: adminBody,
     });
 
-    await transporter.sendMail({
-      from: '"COCOマーケ" <info@cocomake-guide.com>',
+    await resend.emails.send({
+      from: 'COCOマーケ <support@cocomarke.com>',
       to: email,
       subject: '【COCOマーケ】お問い合わせを受け付けました',
       html: autoHtml,

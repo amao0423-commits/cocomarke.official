@@ -46,7 +46,7 @@ export const POST: APIRoute = async ({ request }) => {
   const referralJa = REFERRAL_MAP[referral] || referral;
 
   const transporter = nodemailer.createTransport({
-    host: 'mail1028.onamae.ne.jp',
+    host: 'mail1027.onamae.ne.jp',
     port: 465,
     secure: true,
     auth: { user: 'info@cocomake-guide.com', pass: smtpPass },

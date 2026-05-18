@@ -27,7 +27,7 @@ function sanitize($str) {
     return htmlspecialchars(strip_tags(trim($str)), ENT_QUOTES, 'UTF-8');
 }
 
-$to          = 'info@cocomarke.com';
+$to          = 'info@cocomake-guide.com';
 $inquiryType = sanitize($_POST['inquiryType'] ?? '');
 $company     = sanitize($_POST['company']     ?? '');
 $name        = sanitize($_POST['name']        ?? '');
@@ -53,7 +53,7 @@ if (!filter_var($_POST['email'], FILTER_VALIDATE_EMAIL)) {
 }
 
 // ---- 管理者宛メール ----
-$subject = '【COCOマーケ】お問い合わせ：' . $inquiryType;
+$subject = '<HPお問い合わせ>';
 $body  = "COCOマーケ お問い合わせがありました。\n\n";
 $body .= "■ お問い合わせ区分：{$inquiryType}\n";
 $body .= "■ 会社・組織名　　：{$company}\n";
@@ -89,10 +89,10 @@ $auto_body .= "しばらくお待ちくださいませ。\n\n";
 $auto_body .= "──────────────────────────\n";
 $auto_body .= "COCOマーケ\n";
 $auto_body .= "https://www.cocomake.com\n";
-$auto_body .= "info@cocomarke.com\n";
+$auto_body .= "info@cocomake-guide.com\n";
 $auto_body .= "──────────────────────────\n";
 
-$auto_headers = "From: info@cocomarke.com\r\n";
+$auto_headers = "From: info@cocomake-guide.com\r\n";
 mb_send_mail($email, $auto_subject, $auto_body, $auto_headers);
 
 echo json_encode(['success' => true]);

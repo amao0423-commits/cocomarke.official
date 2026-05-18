@@ -49,7 +49,7 @@ export const POST: APIRoute = async ({ request }) => {
     host: 'mail1028.onamae.ne.jp',
     port: 465,
     secure: true,
-    auth: { user: 'info@cocomarke.com', pass: smtpPass },
+    auth: { user: 'info@cocomake-guide.com', pass: smtpPass },
   });
 
   const adminBody = [
@@ -152,7 +152,7 @@ export const POST: APIRoute = async ({ request }) => {
                 <td style="padding:12px 0 6px;font-size:14px;color:#333;">
                   <strong>■ サービス窓口</strong><br>
                   サービス・その他お問い合わせについてご相談などございましたら、<br>
-                  <a href="mailto:info@cocomarke.com" style="color:#005bea;text-decoration:none;">info@cocomarke.com</a> までご連絡頂ければ幸いです。<br>
+                  <a href="mailto:info@cocomake-guide.com" style="color:#005bea;text-decoration:none;">info@cocomake-guide.com</a> までご連絡頂ければ幸いです。<br>
                   <span style="color:#555;font-size:13px;">※平日の営業時間9：30〜18：30に迅速に対応させていただきます。<br>
                   （土日祝日はお休みとなりますので、翌営業日の対応とさせていただきます）</span>
                 </td>
@@ -162,7 +162,7 @@ export const POST: APIRoute = async ({ request }) => {
                   <strong style="color:#333;">■ 本メールにお心当たりが無い方へ</strong><br>
                   本メールは、COCOマーケのお問い合わせフォームに記載をいただいたお客様にお送りしています。<br>
                   心当たりのない場合は下記のメールにご連絡をお願いいたします。<br>
-                  <a href="mailto:info@cocomarke.com" style="color:#005bea;text-decoration:none;">info@cocomarke.com</a>
+                  <a href="mailto:info@cocomake-guide.com" style="color:#005bea;text-decoration:none;">info@cocomake-guide.com</a>
                 </td>
               </tr>
             </table>
@@ -192,15 +192,15 @@ export const POST: APIRoute = async ({ request }) => {
 
   try {
     await transporter.sendMail({
-      from: '"COCOマーケ" <info@cocomarke.com>',
-      to: 'info@cocomarke.com',
+      from: '"COCOマーケ" <info@cocomake-guide.com>',
+      to: 'info@cocomake-guide.com',
       replyTo: email,
-      subject: `【COCOマーケ】お問い合わせ：${inquiryTypeJa}`,
+      subject: '<HPお問い合わせ>',
       text: adminBody,
     });
 
     await transporter.sendMail({
-      from: '"COCOマーケ" <info@cocomarke.com>',
+      from: '"COCOマーケ" <info@cocomake-guide.com>',
       to: email,
       subject: '【COCOマーケ】お問い合わせを受け付けました',
       html: autoHtml,

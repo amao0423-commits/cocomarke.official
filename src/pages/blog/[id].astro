@@ -237,6 +237,13 @@ html = html.replace('/blog/sample/', '/blog/' + (id ?? '') + '/');
 const pageUrl = 'https://www.cocomarke.com/blog/' + (id ?? '') + '/';
 const ogImage = eyecatchUrl ?? 'https://www.cocomarke.com/images/header-logo.png';
 const ogDesc = escapeHtml((blog.body ?? blog.content ?? '').replace(/<[^>]+>/g, '').slice(0, 120));
+
+// Remove template's generic OG/Twitter tags to prevent duplicates
+html = html.replace(/<meta property="og:[^"]*"[^>]*>/g, '');
+html = html.replace(/<meta name="twitter:[^"]*"[^>]*>/g, '');
+// Replace generic meta description with article-specific
+html = html.replace(/<meta name="description" content="[^"]*">/, '<meta name="description" content="' + ogDesc + '">');
+
 const canonical = '<link rel="canonical" href="' + pageUrl + '">';
 const ogTags = [
   '<meta property="og:type" content="article">',

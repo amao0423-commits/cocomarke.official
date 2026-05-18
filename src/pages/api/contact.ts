@@ -47,8 +47,9 @@ export const POST: APIRoute = async ({ request }) => {
 
   const transporter = nodemailer.createTransport({
     host: 'mail1027.onamae.ne.jp',
-    port: 465,
-    secure: true,
+    port: 587,
+    secure: false,
+    requireTLS: true,
     auth: { user: 'info@cocomake-guide.com', pass: smtpPass },
   });
 

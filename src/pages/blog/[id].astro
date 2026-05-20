@@ -258,7 +258,6 @@ const ogTags = [
   '<meta name="twitter:description" content="' + ogDesc + '">',
   '<meta name="twitter:image" content="' + ogImage + '">',
 ].join('');
-const gaTag = '<!-- Google tag (gtag.js) --><script async src="https://www.googletagmanager.com/gtag/js?id=G-K79MPJ7QYT"></script><script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag(\'js\',new Date());gtag(\'config\',\'G-K79MPJ7QYT\');</script>';
 const articleSchema = JSON.stringify({
   '@context': 'https://schema.org',
   '@type': 'Article',
@@ -284,7 +283,7 @@ const breadcrumbSchema = JSON.stringify({
   ],
 });
 const schemaScripts = `<script type="application/ld+json">${articleSchema}</script><script type="application/ld+json">${breadcrumbSchema}</script>`;
-html = html.replace('</head>', canonical + ogTags + gaTag + schemaScripts + articleCss + '</head>');
+html = html.replace('</head>', canonical + ogTags + schemaScripts + articleCss + '</head>');
 html = html.replace('</body>', tocJs + '</body>');
 
 return new Response(html, { headers: { 'Content-Type': 'text/html; charset=utf-8' } });

@@ -20,8 +20,8 @@ export const GET: APIRoute = async () => {
       const blog = mapBlog(raw);
       return {
         url: `/blog/${blog.id}/`,
-        lastmod: (blog.day ?? blog.publishedAt).slice(0, 10),
-        priority: '0.6',
+        lastmod: (raw.updatedAt ?? blog.day ?? blog.publishedAt).slice(0, 10),
+        priority: '0.7',
         changefreq: 'monthly',
       };
     });

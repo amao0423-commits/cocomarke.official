@@ -21,6 +21,7 @@ import Anthropic from '@anthropic-ai/sdk';
 const MICROCMS_API_KEY  = process.env.MICROCMS_API_KEY  ?? 'qkw2TEC77QumO0EIJnS1wp0FtMlXQQuelmY5';
 const MICROCMS_DOMAIN   = process.env.MICROCMS_SERVICE_DOMAIN ?? 'cocomarke';
 const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY ?? '';
+const PEXELS_API_KEY    = process.env.PEXELS_API_KEY    ?? 'NmEpHgSEbtq6tK5wEd3OziJm101VLGpyeYqV5ZMxhIrMtScj9WNjcN5Z';
 
 const SITE_BASE = 'https://www.cocomarke.com';
 const DELAY_MS  = 4000;
@@ -41,16 +42,17 @@ const fixPostLinks = html => html.replace(/href="(https?:\/\/www\.cocomarke\.com
 
 function stripAddedElements(html) {
   let r = html;
-  r = r.replace(/<img[^>]*(?:pexels|infographic|svg-)[^>]*\/?>/gi, '');
-  r = r.replace(/<figure[^>]*>[\s\S]*?(?:pexels|infographic|svg-|図解)[\s\S]*?<\/figure>/gi, '');
+  // Remove images/figures we previously inserted
+  r = r.replace(/<figure[^>]*>[\s\S]*?(?:pexels-photo|svg-\w+|infographic|図解)[\s\S]*?<\/figure>/gi, '');
+  r = r.replace(/<img[^>]*(?:pexels-photo|svg-\w+|infographic)[^>]*\/?>/gi, '');
   r = r.replace(/<h2[^>]*>\s*この記事でわかること\s*<\/h2>[\s\S]*?(?=<h2|$)/gi, '');
   r = r.replace(/<h2[^>]*>\s*目次\s*<\/h2>[\s\S]*?(?=<h2|$)/gi, '');
   r = r.replace(/<h2[^>]*>\s*よくある質問（FAQ）\s*<\/h2>[\s\S]*/gi, '');
   r = r.replace(/<blockquote>[\s\S]*?(?:cocomarke\.com\/contact|cocomake-guide\.com)[\s\S]*?<\/blockquote>/gi, '');
   r = r.replace(/<p>[^<]*とは、[^<]*のことです[^<]*<\/p>/g, '');
   r = r.replace(/<h2[^>]*>\s*<br\s*\/?>\s*<\/h2>/gi, '');
-  // Remove tip/warning blockquotes we previously added (contain 💡 or ⚠️)
-  r = r.replace(/<blockquote>(?:(?!<\/blockquote>)[\s\S])*(?:💡|⚠️)[\s\S]*?<\/blockquote>/gi, '');
+  // Remove tip/warning blockquotes (v3 format: <strong>💡 or ⚠️ as first child)
+  r = r.replace(/<blockquote>\s*<p>\s*<strong>(?:💡|⚠️)[^<]*<\/strong>[^<]*<\/p>[\s\S]{0,600}?<\/blockquote>/gi, '');
   return r.replace(/\n{3,}/g, '\n\n').trim();
 }
 
@@ -270,191 +272,73 @@ function injectImagesIntoBody(html, imgTag1, imgTag2) {
   return html.slice(0, pos1) + imgTag1 + '\n' + html.slice(pos1, pos2) + imgTag2 + '\n' + html.slice(pos2);
 }
 
-// ─── SVG generation ───────────────────────────────────────────────────────────
+// ─── Pexels photo fetch & upload ─────────────────────────────────────────────
 
-const SVG_W = 800, SVG_H = 550;
-const FONT = "'Hiragino Kaku Gothic Pro','Yu Gothic',sans-serif";
-const COLORS = ['#3B82F6', '#22C55E', '#F97316', '#3B82F6'];
-const COMPLEMENT = { flow: 'comparison', comparison: 'checklist', list: 'flow', pyramid: 'list', checklist: 'pyramid' };
-
-function svgTypeForTitle(title) {
-  if (/比較|vs|違い|選び方/.test(title)) return 'comparison';
-  if (/手順|やり方|ステップ|始め方|方法/.test(title)) return 'flow';
-  if (/\d選|ランキング|一覧/.test(title)) return 'list';
-  if (/戦略|完全ガイド|攻略|完全解説/.test(title)) return 'pyramid';
-  return 'checklist';
+/**
+ * Map article title to 2 distinct Pexels search queries.
+ * q1 = used for image at ~1/3 of article, q2 = image at ~2/3.
+ */
+function makePexelsQueries(title, h2s) {
+  const t = title;
+  if (/PPC|ペイパークリック|リスティング/.test(t))
+    return { q1: 'pay per click digital advertising laptop', q2: 'online marketing analytics dashboard' };
+  if (/リール|Reels/.test(t))
+    return { q1: 'smartphone video content creator', q2: 'social media video production studio' };
+  if (/ストーリー|Story/.test(t))
+    return { q1: 'instagram stories smartphone creative', q2: 'social media content lifestyle' };
+  if (/ハッシュタグ/.test(t))
+    return { q1: 'social media hashtag trending phone', q2: 'instagram content strategy laptop' };
+  if (/アルゴリズム/.test(t))
+    return { q1: 'social media algorithm data technology', q2: 'digital marketing analytics computer' };
+  if (/広告|ads/.test(t))
+    return { q1: 'digital advertising marketing office', q2: 'business campaign results success' };
+  if (/分析|ツール|インサイト/.test(t))
+    return { q1: 'data analytics business dashboard', q2: 'marketing metrics chart laptop' };
+  if (/フォロワー/.test(t))
+    return { q1: 'instagram followers growth engagement', q2: 'social media community building' };
+  if (/DM|メッセージ/.test(t))
+    return { q1: 'smartphone messaging chat digital', q2: 'business communication mobile app' };
+  if (/運用代行/.test(t))
+    return { q1: 'social media management team office', q2: 'digital marketing agency strategy' };
+  if (/集客|マーケティング/.test(t))
+    return { q1: 'digital marketing strategy business', q2: 'social media growth success office' };
+  if (/SEO|検索/.test(t))
+    return { q1: 'search engine optimization laptop', q2: 'content marketing strategy business' };
+  // default instagram marketing
+  return { q1: 'instagram marketing smartphone business', q2: 'social media content creator lifestyle' };
 }
 
-/** Split Japanese text into max-N-char lines (max 2 lines). */
-function wrapLabel(text, maxChars = 12) {
-  const chars = [...text];
-  if (chars.length <= maxChars) return [text];
-  const l1 = chars.slice(0, maxChars).join('');
-  const rest = chars.slice(maxChars, maxChars * 2);
-  const l2 = rest.join('') + (chars.length > maxChars * 2 ? '…' : '');
-  return [l1, l2];
-}
-
-/** Build <text> element with optional 2-line <tspan> wrapping. */
-function tspanEl(text, x, y, attrs, maxChars = 12) {
-  const lines = wrapLabel(text, maxChars);
-  if (lines.length === 1) {
-    return `<text x="${x}" y="${y}" ${attrs}>${lines[0]}</text>`;
-  }
-  // Shift up by half line-height so 2-line text is vertically centred
-  return `<text x="${x}" y="${y - 8}" ${attrs}><tspan x="${x}" dy="0">${lines[0]}</tspan><tspan x="${x}" dy="16">${lines[1]}</tspan></text>`;
-}
-
-/** Header block supporting single-line (≤20 chars) and 2-line (>20 chars). */
-function makeHeaderBlock(header, color) {
-  const chars = [...header];
-  if (chars.length <= 20) {
-    return {
-      height: 72,
-      xml: `<rect width="${SVG_W}" height="72" fill="${color}"/><text x="400" y="46" font-family="${FONT}" font-size="18" font-weight="bold" fill="white" text-anchor="middle">${header}</text>`,
-    };
-  }
-  const l1 = chars.slice(0, 19).join('');
-  const l2 = chars.slice(19, 38).join('') + (chars.length > 38 ? '…' : '');
-  return {
-    height: 88,
-    xml: `<rect width="${SVG_W}" height="88" fill="${color}"/><text x="400" y="38" font-family="${FONT}" font-size="17" font-weight="bold" fill="white" text-anchor="middle">${l1}</text><text x="400" y="63" font-family="${FONT}" font-size="17" font-weight="bold" fill="white" text-anchor="middle">${l2}</text>`,
-  };
-}
-
-function svgWrapper(header, headerColor, body) {
-  const { xml: hxml } = makeHeaderBlock(header, headerColor);
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="${SVG_W}" height="${SVG_H}" viewBox="0 0 ${SVG_W} ${SVG_H}">
-  <rect width="${SVG_W}" height="${SVG_H}" fill="#f8faff"/>
-  ${hxml}
-  ${body}
-  <text x="400" y="540" font-family="sans-serif" font-size="11" fill="#9CA3AF" text-anchor="middle">© COCOマーケ｜Instagramマーケティング支援</text>
-</svg>`;
-}
-
-// Content starts at y=105 (safe for both 72px and 88px headers)
-function svgFlow(titleText, pts, header) {
-  const boxW = 155, boxH = 105;
-  const boxes = pts.slice(0, 4).map((p, i) => {
-    const x = 27 + i * 188;
-    const cx = x + boxW / 2;
-    const labelAttrs = `font-family="${FONT}" font-size="11" fill="white" text-anchor="middle"`;
-    return [
-      `<rect x="${x}" y="108" width="${boxW}" height="${boxH}" rx="10" fill="${COLORS[i]}"/>`,
-      `<text x="${cx}" y="140" font-family="${FONT}" font-size="12" font-weight="bold" fill="white" text-anchor="middle">STEP ${i + 1}</text>`,
-      tspanEl(p, cx, 168, labelAttrs, 11),
-      i < 3 ? `<polygon points="${x+boxW+3},155 ${x+boxW+15},161 ${x+boxW+3},167" fill="#1F2937"/>` : '',
-    ].join('\n  ');
-  });
-  return svgWrapper(header, COLORS[0], boxes.join('\n  '));
-}
-
-function svgComparison(titleText, pts, header) {
-  const labels = [
-    `<text x="200" y="96" font-family="${FONT}" font-size="13" font-weight="bold" fill="${COLORS[0]}" text-anchor="middle">現状</text>`,
-    `<text x="600" y="96" font-family="${FONT}" font-size="13" font-weight="bold" fill="${COLORS[1]}" text-anchor="middle">改善後</text>`,
-    `<line x1="400" y1="84" x2="400" y2="460" stroke="#CBD5E1" stroke-width="2" stroke-dasharray="6"/>`,
-  ].join('\n  ');
-  const rows = pts.slice(0, 4).map((p, i) => {
-    const y = 108 + i * 82;
-    const leftAttrs = `font-family="${FONT}" font-size="12" fill="#1F2937" text-anchor="middle"`;
-    return [
-      `<rect x="25" y="${y}" width="350" height="65" rx="8" fill="${COLORS[i]}22" stroke="${COLORS[i]}" stroke-width="1.5"/>`,
-      tspanEl(p, 200, y + 36, leftAttrs, 16),
-      `<rect x="425" y="${y}" width="350" height="65" rx="8" fill="${COLORS[(i+1)%4]}22" stroke="${COLORS[(i+1)%4]}" stroke-width="1.5"/>`,
-      `<text x="600" y="${y + 37}" font-family="${FONT}" font-size="12" fill="#1F2937" text-anchor="middle">▶ 最適化後</text>`,
-    ].join('\n  ');
-  });
-  return svgWrapper(header, '#1F2937', labels + '\n  ' + rows.join('\n  '));
-}
-
-function svgList(titleText, pts, header) {
-  const rows = pts.slice(0, 4).map((p, i) => {
-    const y = 108 + i * 92;
-    const textAttrs = `font-family="${FONT}" font-size="13" fill="#1F2937"`;
-    return [
-      `<rect x="25" y="${y}" width="750" height="74" rx="8" fill="${COLORS[i]}18"/>`,
-      `<circle cx="65" cy="${y + 37}" r="24" fill="${COLORS[i]}"/>`,
-      `<text x="65" y="${y + 44}" font-family="${FONT}" font-size="18" font-weight="bold" fill="white" text-anchor="middle">${i + 1}</text>`,
-      tspanEl(p, 108, y + 39, textAttrs, 26),
-    ].join('\n  ');
-  });
-  return svgWrapper(header, '#F97316', rows.join('\n  '));
-}
-
-function svgPyramid(titleText, pts, header) {
-  const layers = [
-    { y: 380, w: 680, label: pts[3] ?? '基礎構築', c: '#3B82F6' },
-    { y: 300, w: 520, label: pts[2] ?? '実践対策', c: '#22C55E' },
-    { y: 220, w: 360, label: pts[1] ?? '最適化',   c: '#F97316' },
-    { y: 140, w: 200, label: pts[0] ?? '成果',      c: '#3B82F6' },
-  ];
-  const shapes = layers.map(l => {
-    const textAttrs = `font-family="${FONT}" font-size="12" font-weight="bold" fill="white" text-anchor="middle"`;
-    return [
-      `<polygon points="${400 - l.w/2},${l.y + 68} ${400 + l.w/2},${l.y + 68} ${400 + l.w/2 - 18},${l.y} ${400 - l.w/2 + 18},${l.y}" fill="${l.c}"/>`,
-      tspanEl(l.label, 400, l.y + 38, textAttrs, 18),
-    ].join('\n  ');
-  });
-  return svgWrapper(header, '#1F2937', shapes.join('\n  '));
-}
-
-function svgChecklist(titleText, pts, header) {
-  const rows = pts.slice(0, 4).map((p, i) => {
-    const y = 108 + i * 92;
-    const textAttrs = `font-family="${FONT}" font-size="13" fill="#1F2937"`;
-    return [
-      `<rect x="25" y="${y}" width="750" height="74" rx="8" fill="white" stroke="${COLORS[i]}" stroke-width="2"/>`,
-      `<rect x="25" y="${y}" width="64" height="74" rx="8" fill="${COLORS[i]}"/>`,
-      `<text x="57" y="${y + 46}" font-family="${FONT}" font-size="22" fill="white" text-anchor="middle">✓</text>`,
-      tspanEl(p, 108, y + 39, textAttrs, 26),
-    ].join('\n  ');
-  });
-  return svgWrapper(header, '#22C55E', rows.join('\n  '));
-}
-
-function renderSVG(type, titleText, pts, header) {
-  switch (type) {
-    case 'flow':       return svgFlow(titleText, pts, header);
-    case 'comparison': return svgComparison(titleText, pts, header);
-    case 'list':       return svgList(titleText, pts, header);
-    case 'pyramid':    return svgPyramid(titleText, pts, header);
-    default:           return svgChecklist(titleText, pts, header);
-  }
-}
-
-function makeTwoSVGs(articleId, title, h2s) {
-  const type1 = svgTypeForTitle(title);
-  const type2 = COMPLEMENT[type1];
-  const half = Math.ceil(h2s.length / 2);
-  const pts1 = h2s.slice(0, half).map(h => h.replace(/^\d+\.\s*/, '').trim());
-  const pts2 = h2s.slice(half).map(h => h.replace(/^\d+\.\s*/, '').trim());
-  while (pts1.length < 3) pts1.push(['基本を理解する', '正しく設定する', '継続して改善'][pts1.length]);
-  while (pts2.length < 3) pts2.push(['データで確認する', '成果を最大化する', '運用を安定させる'][pts2.length]);
-
-  const base = title.replace(/【[^】]*】/g,'').replace(/｜.*$/,'').trim();
-  const header1 = base.slice(0, 26) + '｜前半';
-  const header2 = base.slice(0, 26) + '｜後半';
-
-  const id = articleId.slice(0, 28);
-  return [
-    { content: renderSVG(type1, title, pts1, header1), filename: `svg-${id}-1.svg`, alt: `${header1} 図解` },
-    { content: renderSVG(type2, title, pts2, header2), filename: `svg-${id}-2.svg`, alt: `${header2} 図解` },
-  ];
-}
-
-// ─── microCMS media upload ────────────────────────────────────────────────────
-
-async function uploadSVG(svgContent, filename) {
-  const formData = new FormData();
-  formData.append('file', new Blob([Buffer.from(svgContent, 'utf8')], { type: 'image/svg+xml' }), filename);
+async function fetchPexelsPhoto(query, page = 1) {
   const res = await fetch(
+    `https://api.pexels.com/v1/search?query=${encodeURIComponent(query)}&per_page=5&page=${page}&orientation=landscape`,
+    { headers: { Authorization: PEXELS_API_KEY } }
+  );
+  if (!res.ok) throw new Error(`Pexels API ${res.status}`);
+  const data = await res.json();
+  if (!data.photos?.length) throw new Error(`Pexels no results: "${query}"`);
+  return data.photos[0];
+}
+
+async function downloadAndUploadPhoto(photo, filenameBase) {
+  const imgUrl = photo.src.large2x ?? photo.src.large;
+  const ext = (imgUrl.split('?')[0].split('.').pop() || 'jpg').toLowerCase();
+  const filename = `pexels-photo-${photo.id}-${filenameBase}.${ext}`;
+
+  const imgRes = await fetch(imgUrl);
+  if (!imgRes.ok) throw new Error(`Pexels download ${imgRes.status}`);
+  const buffer = await imgRes.arrayBuffer();
+
+  const mimeType = ext === 'jpg' || ext === 'jpeg' ? 'image/jpeg' : `image/${ext}`;
+  const formData = new FormData();
+  formData.append('file', new Blob([buffer], { type: mimeType }), filename);
+
+  const uploadRes = await fetch(
     `https://${MICROCMS_DOMAIN}.microcms-management.io/api/v1/media`,
     { method: 'POST', headers: { 'X-MICROCMS-API-KEY': MICROCMS_API_KEY }, body: formData }
   );
-  if (!res.ok) throw new Error(`SVG upload ${res.status}: ${await res.text()}`);
-  const data = await res.json();
-  return data.url;
+  if (!uploadRes.ok) throw new Error(`Upload ${uploadRes.status}: ${await uploadRes.text()}`);
+  const data = await uploadRes.json();
+  return { url: data.url, alt: photo.alt || photo.photographer, credit: photo.photographer };
 }
 
 // ─── microCMS PATCH ───────────────────────────────────────────────────────────
@@ -548,25 +432,24 @@ async function processArticle(article) {
     }
   }
 
-  // Generate 2 unique SVGs
-  process.stdout.write(`  SVG生成・アップロード...`);
-  const [svg1Def, svg2Def] = makeTwoSVGs(id, newTitle, h2s);
+  // Fetch 2 Pexels photos with different keyword queries
+  process.stdout.write(`  Pexels写真取得・アップロード...`);
+  const { q1, q2 } = makePexelsQueries(newTitle, h2s);
+  const shortId = id.slice(0, 12);
 
-  let img1url = null, img2url = null;
-  try { img1url = await uploadSVG(svg1Def.content, svg1Def.filename); } catch(e) { process.stdout.write(`[SVG1失敗]`); }
-  await sleep(500);
-  try { img2url = await uploadSVG(svg2Def.content, svg2Def.filename); } catch(e) { process.stdout.write(`[SVG2失敗]`); }
+  let photo1 = null, photo2 = null;
+  try { photo1 = await downloadAndUploadPhoto(await fetchPexelsPhoto(q1), `${shortId}-1`); } catch(e) { process.stdout.write(`[P1失敗:${e.message.slice(0,30)}]`); }
+  await sleep(600);
+  // Use page=2 for second query to avoid the same top result if queries are similar
+  try { photo2 = await downloadAndUploadPhoto(await fetchPexelsPhoto(q2, 1), `${shortId}-2`); } catch(e) { process.stdout.write(`[P2失敗:${e.message.slice(0,30)}]`); }
   process.stdout.write(` OK\n`);
 
-  // Shopify-style natural figure tags (shadow + figcaption)
-  const figStyle = 'margin:32px 0;text-align:center;';
-  const imgStyle = 'max-width:100%;height:auto;border-radius:12px;box-shadow:0 4px 16px rgba(0,0,0,0.10);';
-  const capStyle = 'margin-top:8px;font-size:13px;color:#6B7280;';
-  const imgTag1 = img1url
-    ? `<figure style="${figStyle}"><img src="${img1url}" alt="${svg1Def.alt}" width="${SVG_W}" height="${SVG_H}" loading="lazy" style="${imgStyle}"><figcaption style="${capStyle}">${svg1Def.alt}</figcaption></figure>`
+  // Shopify-style figure tags (margin/shadow handled by CSS in [id].astro)
+  const imgTag1 = photo1
+    ? `<figure style="text-align:center;"><img src="${photo1.url}" alt="${photo1.alt}" loading="lazy"><figcaption>Photo by ${photo1.credit} / Pexels</figcaption></figure>`
     : '';
-  const imgTag2 = img2url
-    ? `<figure style="${figStyle}"><img src="${img2url}" alt="${svg2Def.alt}" width="${SVG_W}" height="${SVG_H}" loading="lazy" style="${imgStyle}"><figcaption style="${capStyle}">${svg2Def.alt}</figcaption></figure>`
+  const imgTag2 = photo2
+    ? `<figure style="text-align:center;"><img src="${photo2.url}" alt="${photo2.alt}" loading="lazy"><figcaption>Photo by ${photo2.credit} / Pexels</figcaption></figure>`
     : '';
 
   // Inject images at ~1/3 and ~2/3 of original body sections
@@ -593,7 +476,7 @@ async function processArticle(article) {
   const result = await patchArticle(id, newTitle, finalContent);
   process.stdout.write(` ${result.ok ? '✅' : '❌'} (${result.status})\n`);
 
-  return { id, patchOk: result.ok, img1: img1url, img2: img2url };
+  return { id, patchOk: result.ok, img1: photo1?.url, img2: photo2?.url };
 }
 
 // ─── Main ─────────────────────────────────────────────────────────────────────
@@ -604,7 +487,7 @@ async function main() {
   console.log('═'.repeat(64));
   console.log('SEO Batch Rewrite v3  |  COCOマーケ blogs');
   console.log(`Mode: ${anthropic ? 'AI rewrite (Claude Haiku)' : 'Structural rewrite'}`);
-  console.log('SVG: 550px, tspan折り返し, 2行ヘッダー対応');
+  console.log('Images: Pexels写真2枚（キーワード別）');
   console.log('Blocks: tip/warning 最大各1箇所 | Shopify-style figure');
   if (onlyId) console.log(`Target: ${onlyId} のみ`);
   console.log('═'.repeat(64));

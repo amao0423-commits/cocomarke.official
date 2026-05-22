@@ -1,6 +1,11 @@
 {
   "redirects": [
     {
+      "source": "/blog/instagram-account-multiple-users-share-2025-safe-management",
+      "destination": "/blog/instagram-account-multiple-users-share-2025-safe",
+      "permanent": true
+    },
+    {
       "source": "/post/:path+",
       "destination": "/blog/:path+",
       "permanent": true

@@ -85,8 +85,8 @@ html { scroll-behavior: smooth; }
 }
 /* ── TOC Box ── */
 .toc-box {
-  background: #f0f6ff;
-  border: 1px solid #c2d7f5;
+  background: #F0F9FF;
+  border: 1px solid #BAE6FD;
   border-radius: 10px;
   padding: 20px 24px 20px 36px;
   margin: 0 0 2.2em;
@@ -103,7 +103,7 @@ html { scroll-behavior: smooth; }
 }
 .toc-box li::before { content: none; }
 .toc-box a {
-  color: #005bea !important;
+  color: #2563EB !important;
   text-decoration: none !important;
   font-size: 14px;
   line-height: 1.6;
@@ -121,9 +121,9 @@ html { scroll-behavior: smooth; }
 }
 /* ── Headings ── */
 .cms-body h2 {
-  background: #e8f0fe;
+  background: #EFF6FF;
   padding: 11px 18px 11px 14px;
-  border-left: 5px solid #005bea;
+  border-left: 5px solid #60A5FA;
   border-radius: 0 6px 6px 0;
   font-size: 24px;
   font-weight: 800;
@@ -133,8 +133,8 @@ html { scroll-behavior: smooth; }
   scroll-margin-top: 100px;
 }
 .cms-body h3 {
-  border-top: 3px solid #005bea;
-  border-bottom: 1px solid #c2d0e8;
+  border-top: 3px solid #60A5FA;
+  border-bottom: 1px solid #BFDBFE;
   padding: 10px 4px;
   font-size: 20px;
   font-weight: 700;
@@ -156,17 +156,17 @@ html { scroll-behavior: smooth; }
 .cms-body ol li { margin-bottom: 0.5em; line-height: 1.75; }
 .cms-body ul { margin: 1em 0; padding-left: 0.4em; }
 .cms-body ul > li { list-style: none; padding-left: 1.5em; position: relative; margin-bottom: 0.6em; line-height: 1.75; }
-.cms-body ul > li::before { content: "▶"; color: #005bea; position: absolute; left: 0; font-size: 0.68em; top: 0.42em; }
-.cms-body a { color: #005bea; text-decoration: underline; }
+.cms-body ul > li::before { content: "▶"; color: #60A5FA; position: absolute; left: 0; font-size: 0.68em; top: 0.42em; }
+.cms-body a { color: #2563EB; text-decoration: underline; }
 .cms-body a:hover { opacity: 0.75; }
 .cms-body img { max-width: 100%; height: auto; margin: 1em 0; border-radius: 8px; }
 .cms-body figure { margin: 2em 0; text-align: center; }
 .cms-body figure img { margin: 0; box-shadow: 0 4px 16px rgba(0,0,0,0.10); border-radius: 12px; }
 .cms-body figcaption { margin-top: 8px; font-size: 13px; color: #6B7280; }
 .cms-body table { border-collapse: collapse; width: 100%; margin: 1.5em 0; table-layout: auto; }
-.cms-body th { background: #005bea; color: #fff; font-weight: 700; text-align: center; padding: 10px 14px; border: 1px solid #004bcc; white-space: nowrap; }
-.cms-body td { border: 1px solid #d0d7e3; padding: 9px 13px; text-align: center; vertical-align: middle; }
-.cms-body blockquote { border-left: 4px solid #4a90e2; background: #f5f9ff; margin: 1.5em 0; padding: 12px 16px; color: #555; border-radius: 0 6px 6px 0; }
+.cms-body th { background: #DBEAFE; color: #1E40AF; font-weight: 700; text-align: center; padding: 10px 14px; border: 1px solid #93C5FD; white-space: nowrap; }
+.cms-body td { border: 1px solid #DBEAFE; padding: 9px 13px; text-align: center; vertical-align: middle; }
+.cms-body blockquote { border-left: 4px solid #93C5FD; background: #F0F9FF; margin: 1.5em 0; padding: 12px 16px; color: #374151; border-radius: 0 6px 6px 0; }
 </style>`;
 
 // --- JS: detect TOC, fix anchor IDs, color-code tip/warning blockquotes ---
@@ -220,14 +220,14 @@ const tocJs = `<script>
         else { a.style.background = '#22C55E'; a.style.color = '#fff'; }
       });
     } else if (text.indexOf('🚫') !== -1) {
-      bq.style.borderLeftColor = '#EF4444';
+      bq.style.borderLeftColor = '#FCA5A5';
       bq.style.background = '#FEF2F2';
     } else if (text.indexOf('💡') !== -1) {
-      bq.style.borderLeftColor = '#3B82F6';
+      bq.style.borderLeftColor = '#60A5FA';
       bq.style.background = '#EFF6FF';
     } else if (text.indexOf('⚠️') !== -1) {
-      bq.style.borderLeftColor = '#F97316';
-      bq.style.background = '#FFF7ED';
+      bq.style.borderLeftColor = '#FBBF24';
+      bq.style.background = '#FFFBEB';
     }
   });
 })();

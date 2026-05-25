@@ -198,8 +198,8 @@ const tocJs = `<script>
   // Color-code blockquotes by emoji prefix
   body.querySelectorAll('blockquote').forEach(function(bq) {
     var text = bq.textContent || '';
-    if (text.indexOf('🌙') !== -1) {
-      // Dark CTA card
+    if (bq.querySelector('a[href*="cocomarke.com/contact"]')) {
+      // Dark CTA card (detected by contact link)
       bq.style.background = '#1F2937';
       bq.style.border = 'none';
       bq.style.borderRadius = '10px';
@@ -326,6 +326,7 @@ const breadcrumbSchema = JSON.stringify({
   ],
 });
 const schemaScripts = `<script type="application/ld+json">${articleSchema}</script><script type="application/ld+json">${breadcrumbSchema}</script>`;
+html = html.replace(/<link rel="canonical"[^>]*>/i, '');
 html = html.replace('</head>', canonical + ogTags + schemaScripts + articleCss + '</head>');
 html = html.replace('</body>', tocJs + '</body>');
 

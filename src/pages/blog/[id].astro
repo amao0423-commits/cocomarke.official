@@ -9,22 +9,20 @@ if (id === 'sample') {
   return new Response(sampleHtml, { headers: { 'Content-Type': 'text/html; charset=utf-8' } });
 }
 
-let blog: Blog;
-try {
-  const raw = await client.get<any>({ endpoint: 'blogs', contentId: id as string });
-  blog = mapBlog(raw);
-} catch {
-  return Astro.redirect('/blog/');
-}
+// 記事取得と関連記事取得を並列実行
+const [rawBlog, recentBlogs] = await Promise.all([
+  client.get<any>({ endpoint: 'blogs', contentId: id as string }).catch(() => null),
+  cached<Blog[]>('blogs-list', async () => {
+    const res = await client.getList<any>({
+      endpoint: 'blogs',
+      queries: { limit: 20, orders: '-publishedAt', fields: 'id,title,day,publishedAt,eyecatch,category' },
+    });
+    return res.contents.map(mapBlog);
+  }).catch(() => [] as Blog[]),
+]);
 
-// Fetch 5 recent articles for おすすめ記事 section
-const recentBlogs = await cached<Blog[]>('blogs-list', async () => {
-  const res = await client.getList<any>({
-    endpoint: 'blogs',
-    queries: { limit: 100, orders: '-publishedAt', fields: 'id,title,day,publishedAt,eyecatch,category' },
-  });
-  return res.contents.map(mapBlog);
-}).catch(() => [] as Blog[]);
+if (!rawBlog) return Astro.redirect('/blog/');
+const blog = mapBlog(rawBlog);
 
 // 同カテゴリを優先、残りを新着で補完（最大5件）
 const curCat = typeof blog.category === 'string' ? blog.category : blog.category?.name ?? '';
@@ -430,5 +428,10 @@ html = html.replace(/<link rel="canonical"[^>]*>/i, '');
 html = html.replace('</head>', canonical + ogTags + schemaScripts + articleCss + '</head>');
 html = html.replace('</body>', tocJs + ga4Js + '</body>');
 
-return new Response(html, { headers: { 'Content-Type': 'text/html; charset=utf-8' } });
+return new Response(html, {
+  headers: {
+    'Content-Type': 'text/html; charset=utf-8',
+    'Cache-Control': 'public, max-age=0, s-maxage=600, stale-while-revalidate=86400',
+  },
+});
 ---

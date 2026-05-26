@@ -40,6 +40,14 @@ const otherBlogs = recentBlogs.filter(b => {
 });
 const relatedBlogs = [...sameCatBlogs, ...otherBlogs].slice(0, 5);
 
+// SEO overrides for specific articles
+const override = SEO_OVERRIDES[id ?? ''];
+const blogIds = new Set(recentBlogs.map(b => b.id));
+const validRelatedLinks = (override?.relatedLinks ?? []).filter(l => {
+  const slug = l.href.replace('/blog/', '').replace(/\/$/, '');
+  return blogIds.has(slug);
+});
+
 let html = sampleHtml;
 
 const date = formatDate(blog.day ?? blog.publishedAt);
@@ -319,14 +327,6 @@ if (relatedBlogs.length > 0) {
     }
   }
 }
-
-// SEO overrides for specific articles
-const override = SEO_OVERRIDES[id ?? ''];
-const blogIds = new Set(recentBlogs.map(b => b.id));
-const validRelatedLinks = (override?.relatedLinks ?? []).filter(l => {
-  const slug = l.href.replace('/blog/', '').replace(/\/$/, '');
-  return blogIds.has(slug);
-});
 
 const displayTitle = override?.title ?? blog.title;
 const displayDesc  = override?.description ?? (blog.body ?? blog.content ?? '').replace(/<[^>]+>/g, '').slice(0, 120);

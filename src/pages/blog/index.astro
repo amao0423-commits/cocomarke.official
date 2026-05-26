@@ -121,5 +121,10 @@ if(mBtn&&mDrop){
 
 html = html.replace('</body>', `<script>${filterJs}</script></body>`);
 
+const blogIndexUrl = 'https://www.cocomarke.com/blog/';
+const blogCanonical = `<link rel="canonical" href="${blogIndexUrl}"><meta property="og:url" content="${blogIndexUrl}">`;
+html = html.replace(/<link rel="canonical"[^>]*>/i, '');
+html = html.replace('</head>', blogCanonical + '</head>');
+
 return new Response(html, { headers: { 'Content-Type': 'text/html; charset=utf-8' } });
 ---

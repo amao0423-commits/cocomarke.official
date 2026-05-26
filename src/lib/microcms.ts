@@ -30,6 +30,7 @@ type RawBlog = {
   category?: { name: string } | string;
   day?: string;
   publishedAt: string;
+  updatedAt: string;
 };
 
 // ---- Clean types ----
@@ -57,6 +58,7 @@ export type Blog = {
   body?: string;
   day?: string;
   publishedAt: string;
+  updatedAt: string;
 };
 
 // ---- Mappers ----
@@ -89,6 +91,7 @@ export function mapBlog(raw: RawBlog): Blog {
     body: raw.content,
     day: raw.day,
     publishedAt: raw.publishedAt,
+    updatedAt: raw.updatedAt,
   };
 }
 

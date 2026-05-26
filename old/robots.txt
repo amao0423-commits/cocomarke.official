@@ -2,5 +2,6 @@ User-agent: *
 Allow: /
 Disallow: /contact/thanks/
 Disallow: /api/
+Disallow: /post/
 
 Sitemap: https://www.cocomarke.com/sitemap.xml

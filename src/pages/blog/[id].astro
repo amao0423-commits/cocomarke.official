@@ -1,6 +1,7 @@
 ---
 import sampleHtml from '../../../templates/blog/sample/index.html?raw';
 import { client, formatDate, escapeHtml, cached, mapBlog, type Blog } from '../../lib/microcms';
+import { SEO_OVERRIDES } from '../../lib/blogSeoOverrides';
 
 const { id } = Astro.params;
 
@@ -25,7 +26,19 @@ const recentBlogs = await cached<Blog[]>('blogs-list', async () => {
   return res.contents.map(mapBlog);
 }).catch(() => [] as Blog[]);
 
-const relatedBlogs = recentBlogs.filter(b => b.id !== id).slice(0, 5);
+// 同カテゴリを優先、残りを新着で補完（最大5件）
+const curCat = typeof blog.category === 'string' ? blog.category : blog.category?.name ?? '';
+const sameCatBlogs = recentBlogs.filter(b => {
+  if (b.id === id) return false;
+  const bCat = typeof b.category === 'string' ? b.category : b.category?.name ?? '';
+  return curCat && bCat === curCat;
+});
+const otherBlogs = recentBlogs.filter(b => {
+  if (b.id === id) return false;
+  const bCat = typeof b.category === 'string' ? b.category : b.category?.name ?? '';
+  return !curCat || bCat !== curCat;
+});
+const relatedBlogs = [...sameCatBlogs, ...otherBlogs].slice(0, 5);
 
 let html = sampleHtml;
 
@@ -233,15 +246,48 @@ const tocJs = `<script>
 })();
 </script>`;
 
+// --- Lead block (override articles only) ---
+const leadHtml = override?.lead
+  ? `<div style="background:#EFF6FF;border-left:5px solid #3B82F6;padding:16px 20px;margin:0 0 28px;border-radius:0 8px 8px 0;"><p style="margin:0;font-size:15px;line-height:1.8;color:#1E3A5F;">${escapeHtml(override.lead)}</p></div>`
+  : '';
+
+// --- Override FAQ block ---
+const overrideFaqHtml = override?.faqs?.length
+  ? `<div class="cms-body" id="seo-faq" style="margin-top:40px;"><h2 id="h-faq">よくある質問</h2>` +
+    override.faqs.map((f, i) =>
+      `<h3>Q${i + 1}. ${escapeHtml(f.q)}</h3><p>${escapeHtml(f.a)}</p>`
+    ).join('') +
+    `</div>`
+  : '';
+
+// --- Override related links block ---
+const overrideRelatedHtml = validRelatedLinks.length
+  ? `<div class="cms-body" id="seo-related" style="margin-top:40px;"><h2>関連して読まれている記事</h2><ul>` +
+    validRelatedLinks.map(l =>
+      `<li><a href="${l.href}" data-ga="related_article_click">${escapeHtml(l.label)}</a></li>`
+    ).join('') +
+    `</ul></div>`
+  : '';
+
 const bodyHtml = blog.body ?? blog.content ?? '';
 if (bodyHtml) {
-  const cleanedBody = cleanWixContent(bodyHtml);
+  let cleanedBody = cleanWixContent(bodyHtml);
+  // Override記事では既存FAQを除去して差し替える
+  if (override) {
+    cleanedBody = cleanedBody.replace(/<h2[^>]*>\s*よくある質問[（(]?FAQ[）)]?\s*<\/h2>[\s\S]*/gi, '');
+    cleanedBody = cleanedBody.replace(/<h2[^>]*>\s*合わせて読みたい[^<]*<\/h2>[\s\S]*?(?=<h2[^>]*>\s*まとめ|$)/gi, '');
+  }
   const BODY_START = '<div class="pt-20 flex flex-col gap-20">';
   const BODY_END   = '</div></article>';
   const si = html.indexOf(BODY_START);
   const ei = html.indexOf(BODY_END, si);
   if (si !== -1 && ei !== -1) {
-    html = html.slice(0, si) + BODY_START + '<div class="cms-body">' + cleanedBody + '</div>' + BODY_END + html.slice(ei + BODY_END.length);
+    html = html.slice(0, si) + BODY_START +
+      leadHtml +
+      '<div class="cms-body">' + cleanedBody + '</div>' +
+      overrideFaqHtml +
+      overrideRelatedHtml +
+      BODY_END + html.slice(ei + BODY_END.length);
   }
 }
 
@@ -274,12 +320,23 @@ if (relatedBlogs.length > 0) {
   }
 }
 
-html = html.replace(/<title>.*?<\/title>/, '<title>' + escapeHtml(blog.title) + ' | COCOマーケ</title>');
+// SEO overrides for specific articles
+const override = SEO_OVERRIDES[id ?? ''];
+const blogIds = new Set(recentBlogs.map(b => b.id));
+const validRelatedLinks = (override?.relatedLinks ?? []).filter(l => {
+  const slug = l.href.replace('/blog/', '').replace(/\/$/, '');
+  return blogIds.has(slug);
+});
+
+const displayTitle = override?.title ?? blog.title;
+const displayDesc  = override?.description ?? (blog.body ?? blog.content ?? '').replace(/<[^>]+>/g, '').slice(0, 120);
+
+html = html.replace(/<title>.*?<\/title>/, '<title>' + escapeHtml(displayTitle) + ' | COCOマーケ</title>');
 html = html.replace('/blog/sample/', '/blog/' + (id ?? '') + '/');
 
 const pageUrl = 'https://www.cocomarke.com/blog/' + (id ?? '') + '/';
 const ogImage = eyecatchUrl ?? 'https://www.cocomarke.com/images/header-logo.png';
-const ogDesc = escapeHtml((blog.body ?? blog.content ?? '').replace(/<[^>]+>/g, '').slice(0, 120));
+const ogDesc = escapeHtml(displayDesc);
 
 // Remove template's generic OG/Twitter tags to prevent duplicates
 html = html.replace(/<meta property="og:[^"]*"[^>]*>/g, '');
@@ -291,29 +348,40 @@ const canonical = '<link rel="canonical" href="' + pageUrl + '">';
 const ogTags = [
   '<meta property="og:type" content="article">',
   '<meta property="og:url" content="' + pageUrl + '">',
-  '<meta property="og:title" content="' + escapeHtml(blog.title) + ' | COCOマーケ">',
+  '<meta property="og:title" content="' + escapeHtml(displayTitle) + ' | COCOマーケ">',
   '<meta property="og:description" content="' + ogDesc + '">',
   '<meta property="og:image" content="' + ogImage + '">',
   '<meta property="og:site_name" content="COCOマーケ">',
   '<meta property="og:locale" content="ja_JP">',
   '<meta name="twitter:card" content="summary_large_image">',
-  '<meta name="twitter:title" content="' + escapeHtml(blog.title) + ' | COCOマーケ">',
+  '<meta name="twitter:title" content="' + escapeHtml(displayTitle) + ' | COCOマーケ">',
   '<meta name="twitter:description" content="' + ogDesc + '">',
   '<meta name="twitter:image" content="' + ogImage + '">',
 ].join('');
 const articleSchema = JSON.stringify({
   '@context': 'https://schema.org',
   '@type': 'Article',
-  headline: blog.title,
-  image: ogImage,
+  mainEntityOfPage: { '@type': 'WebPage', '@id': pageUrl },
+  headline: displayTitle,
+  image: [{
+    '@type': 'ImageObject',
+    url: eyecatchUrl ?? 'https://www.cocomarke.com/images/header-logo.png',
+    width: blog.eyecatch?.width ?? 1200,
+    height: blog.eyecatch?.height ?? 630,
+  }],
   datePublished: (blog.day ?? blog.publishedAt ?? '').slice(0, 10),
+  dateModified: (blog.updatedAt ?? blog.day ?? blog.publishedAt ?? '').slice(0, 10),
   author: { '@type': 'Organization', name: 'COCOマーケ', url: 'https://www.cocomarke.com/' },
   publisher: {
     '@type': 'Organization',
     name: 'COCOマーケ',
-    logo: { '@type': 'ImageObject', url: 'https://www.cocomarke.com/images/header-logo.png' },
+    logo: {
+      '@type': 'ImageObject',
+      url: 'https://www.cocomarke.com/images/header-logo.png',
+      width: 400,
+      height: 80,
+    },
   },
-  url: pageUrl,
   description: ogDesc,
 });
 const breadcrumbSchema = JSON.stringify({
@@ -325,10 +393,42 @@ const breadcrumbSchema = JSON.stringify({
     { '@type': 'ListItem', position: 3, name: blog.title, item: pageUrl },
   ],
 });
-const schemaScripts = `<script type="application/ld+json">${articleSchema}</script><script type="application/ld+json">${breadcrumbSchema}</script>`;
+// FAQPage schema (override articles only)
+const faqPageSchema = override?.faqs?.length ? JSON.stringify({
+  '@context': 'https://schema.org',
+  '@type': 'FAQPage',
+  mainEntity: override.faqs.map(f => ({
+    '@type': 'Question',
+    name: f.q,
+    acceptedAnswer: { '@type': 'Answer', text: f.a },
+  })),
+}) : null;
+
+const schemaScripts = [
+  `<script type="application/ld+json">${articleSchema}</script>`,
+  `<script type="application/ld+json">${breadcrumbSchema}</script>`,
+  faqPageSchema ? `<script type="application/ld+json">${faqPageSchema}</script>` : '',
+].join('');
+
+// GA4 event tracking
+const ga4Js = `<script>(function(){
+document.addEventListener('click',function(e){
+  var t=e.target.closest('a');
+  if(!t||typeof gtag==='undefined')return;
+  var h=t.href||'';
+  var ev=null;
+  if(h.indexOf('cocomarke.com/contact')!==-1)ev='contact_click';
+  else if(h.indexOf('cocomake-guide.com')!==-1)ev='document_click';
+  else if(h.indexOf('line.me')!==-1||h.indexOf('lin.ee')!==-1)ev='line_click';
+  else if(t.closest('#seo-related'))ev='related_article_click';
+  else if(t.closest('blockquote')&&h.indexOf('cocomarke.com')!==-1)ev='article_cta_click';
+  if(ev)gtag('event',ev,{page_slug:window.location.pathname,link_url:h});
+});
+})();</script>`;
+
 html = html.replace(/<link rel="canonical"[^>]*>/i, '');
 html = html.replace('</head>', canonical + ogTags + schemaScripts + articleCss + '</head>');
-html = html.replace('</body>', tocJs + '</body>');
+html = html.replace('</body>', tocJs + ga4Js + '</body>');
 
 return new Response(html, { headers: { 'Content-Type': 'text/html; charset=utf-8' } });
 ---

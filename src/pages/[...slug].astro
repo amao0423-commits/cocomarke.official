@@ -13,10 +13,15 @@ const pages: Record<string, string> = {
   'contact/thanks': thanksHtml,
 };
 
-const html = pages[String(slug)];
+let html = pages[String(slug)];
 if (!html) {
   return new Response('Not Found', { status: 404 });
 }
+
+const pageUrl = 'https://www.cocomarke.com/' + String(slug) + '/';
+const staticCanonical = `<link rel="canonical" href="${pageUrl}"><meta property="og:url" content="${pageUrl}">`;
+html = html.replace(/<link rel="canonical"[^>]*>/i, '');
+html = html.replace('</head>', staticCanonical + '</head>');
 
 return new Response(html, { headers: { 'Content-Type': 'text/html; charset=utf-8' } });
 ---

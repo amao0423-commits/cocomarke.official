@@ -119,6 +119,18 @@ export const SEO_OVERRIDES: Record<string, SeoOverride> = {
     ],
   },
 
+  'insta-influencer-marketing-guide': {
+    title: 'Instagramインフルエンサーマーケティング完全ガイド｜費用相場・選び方・KPI・PR表記まで解説【2026年版】',
+    description: 'Instagramインフルエンサーマーケティングの費用相場・手法・インフルエンサーの選び方・KPI設計・ステマ規制対応まで解説。マイクロとメガの使い分け、PR表記の方法、失敗例と回避策も網羅した実務向けガイドです。',
+    lead: 'Instagramインフルエンサーマーケティングとは、インフルエンサーの発信力と信頼を活用して認知拡大・購買促進を狙う施策です。成果を出すには「誰に頼むか」より「目的・設計・測定」の3つが重要です。費用相場・選び方・PR表記のルールまで実務に必要な情報を整理します。',
+    faqs: [],
+    relatedLinks: [
+      { href: '/blog/instagram-management-agency-comparison/', label: 'Instagram運用代行おすすめ9選を比較' },
+      { href: '/blog/instagram-reels-tips-to-go-viral-2025/', label: 'インスタリールがバズる方法7選' },
+      { href: '/blog/instagram-algorithm-latest-complete-guide/', label: 'Instagramアルゴリズム完全ガイド' },
+    ],
+  },
+
   'instagram-management-agency-comparison': {
     title: 'Instagram運用代行おすすめ9選を比較｜費用相場・選び方・失敗しないポイントを解説【2026年版】',
     description: 'Instagram運用代行会社おすすめ9社を比較。料金相場、支援範囲、得意業種、選び方をわかりやすく解説します。店舗集客・認知拡大・問い合わせ獲得など目的別に、自社に合う運用代行会社を選びたい方におすすめです。',

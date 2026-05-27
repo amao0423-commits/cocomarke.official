@@ -278,9 +278,12 @@ const overrideRelatedHtml = validRelatedLinks.length
 const bodyHtml = blog.body ?? blog.content ?? '';
 if (bodyHtml) {
   let cleanedBody = cleanWixContent(bodyHtml);
-  // Override記事では既存FAQを除去して差し替える
-  if (override) {
+  // override.faqs が指定されているときだけ本文FAQをストリップして差し替える
+  if (override?.faqs?.length) {
     cleanedBody = cleanedBody.replace(/<h2[^>]*>\s*よくある質問[（(]?FAQ[）)]?\s*<\/h2>[\s\S]*/gi, '');
+  }
+  // override.relatedLinks が指定されているときだけ本文の関連記事ブロックをストリップ
+  if (override?.relatedLinks?.length) {
     cleanedBody = cleanedBody.replace(/<h2[^>]*>\s*合わせて読みたい[^<]*<\/h2>[\s\S]*?(?=<h2[^>]*>\s*まとめ|$)/gi, '');
   }
   const BODY_START = '<div class="pt-20 flex flex-col gap-20">';

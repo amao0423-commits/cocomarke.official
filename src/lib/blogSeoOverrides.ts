@@ -119,6 +119,18 @@ export const SEO_OVERRIDES: Record<string, SeoOverride> = {
     ],
   },
 
+  'instagram-management-agency-comparison': {
+    title: 'Instagram運用代行おすすめ9選を比較｜費用相場・選び方・失敗しないポイントを解説【2026年版】',
+    description: 'Instagram運用代行会社おすすめ9社を比較。料金相場、支援範囲、得意業種、選び方をわかりやすく解説します。店舗集客・認知拡大・問い合わせ獲得など目的別に、自社に合う運用代行会社を選びたい方におすすめです。',
+    lead: 'Instagram運用代行とは、企業や店舗のInstagram運用を戦略設計から投稿・分析まで支援するサービスです。ただし、得意業種・対応範囲・料金体系は会社ごとに大きく異なります。この記事では9社を比較しながら、費用相場・選び方・目的別のおすすめを整理します。',
+    faqs: [],
+    relatedLinks: [
+      { href: '/blog/instagram-algorithm-latest-complete-guide/', label: 'Instagramアルゴリズム完全ガイド' },
+      { href: '/blog/instagram-follower-methods/', label: 'Instagramフォロワーを増やす方法まとめ' },
+      { href: '/blog/instagram-insights-guide-2025/', label: 'Instagramインサイトの見方と活用法' },
+    ],
+  },
+
   'instagram-live-how-to-guide-2026': {
     title: 'インスタライブのやり方｜配信手順・条件・見方まとめ',
     description: 'Instagramライブ配信の始め方・やり方・視聴方法を解説。配信できない原因、コメントの設定、通知のやり方も含めて2026年最新版でまとめました。',

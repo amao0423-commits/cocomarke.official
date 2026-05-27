@@ -12,7 +12,7 @@ if (id === 'sample') {
 // 記事取得と関連記事取得を並列実行
 const [rawBlog, recentBlogs] = await Promise.all([
   client.get<any>({ endpoint: 'blogs', contentId: id as string }).catch(() => null),
-  cached<Blog[]>('blogs-list', async () => {
+  cached<Blog[]>('blogs-related-20', async () => {
     const res = await client.getList<any>({
       endpoint: 'blogs',
       queries: { limit: 20, orders: '-publishedAt', fields: 'id,title,day,publishedAt,eyecatch,category' },

@@ -140,6 +140,40 @@ export const SEO_OVERRIDES: Record<string, SeoOverride> = {
       { href: '/blog/instagram-algorithm-latest-complete-guide/', label: 'Instagramアルゴリズム完全ガイド' },
       { href: '/blog/instagram-follower-methods/', label: 'Instagramフォロワーを増やす方法まとめ' },
       { href: '/blog/instagram-insights-guide-2025/', label: 'Instagramインサイトの見方と活用法' },
+      { href: '/blog/free-instagram-account-check/', label: 'Instagramアカウント無料診断で現状を把握する' },
+    ],
+  },
+
+  'free-instagram-account-check': {
+    title: 'Instagramアカウントが伸びない原因と改善策｜無料アカウント診断のご案内',
+    description: 'Instagramアカウントが伸びない原因をプロが無料で診断します。アカウント設計・投稿テーマ・導線設計など伸び悩みの根本原因を特定し、優先度つきの改善策をご提案。500社以上の支援実績を持つ専任マネージャーが対応します。',
+    lead: 'Instagramアカウントが伸びない原因は、投稿の見た目ではなくアカウント設計・テーマの一貫性・導線設計に潜んでいることがほとんどです。この記事では伸び悩みの根本原因を解説したうえで、COCOマーケの無料アカウント診断サービスをご案内します。',
+    faqs: [
+      {
+        q: '無料アカウント診断では何をしてもらえますか？',
+        a: 'プロフィール設計・投稿テーマの一貫性・導線設計・インサイトデータの傾向など、アカウント全体を専任マネージャーが診断します。「何から改善すればいいか」を優先順位つきで提示するため、すぐに行動に移しやすい形でフィードバックを受け取れます。',
+      },
+      {
+        q: 'フォロワーが少なくても診断を受けられますか？',
+        a: 'フォロワー数に関わらず受診できます。フォロワーが少ない段階こそ、アカウント設計の方向性を正しく整えることが重要です。フォロワー数よりもプロフィールの設計・投稿テーマ・導線の有無を重点的に診断します。',
+      },
+      {
+        q: '診断後に契約を迫られませんか？',
+        a: '無理な勧誘は一切ありません。診断結果のフィードバックは希望者全員に提供しており、追加サービスのご案内は希望された方のみに行っています。診断だけで終了していただいても問題ありません。',
+      },
+      {
+        q: 'Instagramアカウントが伸びない原因として多いものは何ですか？',
+        a: '最も多いのはアカウントコンセプトの不明確さと導線設計の不足です。投稿の質を上げても、誰向けのアカウントかが伝わらなければフォロワー転換率は上がりません。次いで多いのがエンゲージメント率の低下で、コンテンツのテーマがターゲットとずれていることが主な原因です。',
+      },
+      {
+        q: '自社でInstagramを運用しているが成果が出ない場合はどうすればいいですか？',
+        a: 'まず現状のアカウントを客観的に診断することをおすすめします。投稿を続けているのに伸びない状態は、投稿の問題ではなくアカウント設計の問題であるケースが多いです。無料診断では改善すべき優先項目を具体的に整理します。',
+      },
+    ],
+    relatedLinks: [
+      { href: '/blog/instagram-algorithm-latest-complete-guide/', label: 'Instagramアルゴリズムの基本と運用への活かし方' },
+      { href: '/blog/instagram-profile-strategy-2025/', label: 'Instagramプロフィールの最適化戦略' },
+      { href: '/blog/instagram-insights-guide-2025/', label: 'Instagramインサイトの見方と活用法' },
     ],
   },
 
@@ -187,6 +221,7 @@ export const SEO_OVERRIDES: Record<string, SeoOverride> = {
       { href: '/blog/instagram-algorithm-latest-complete-guide/', label: 'Instagramアルゴリズムの基本と運用への活かし方' },
       { href: '/blog/instagram-insights-guide-2025/', label: 'Instagramインサイトの見方と活用法' },
       { href: '/blog/insta-influencer-marketing-guide/', label: 'Instagramインフルエンサーマーケティング完全ガイド' },
+      { href: '/blog/free-instagram-account-check/', label: 'Instagramアカウント無料診断で現状を把握する' },
     ],
   },
 

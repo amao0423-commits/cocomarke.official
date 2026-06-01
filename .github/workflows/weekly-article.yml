@@ -1,11 +1,21 @@
-name: Weekly Article Auto-Generation
+name: Weekly Article Generation
 
 on:
-  schedule:
-    # Every Friday at 09:00 UTC = 18:00 JST
-    - cron: '0 9 * * 5'
-  # Allow manual trigger from GitHub Actions UI
+  # 自動スケジュールは停止。火曜のSEOリサーチ → Slack確認 → 手動実行に変更。
+  # 緊急時のみ cron を有効にすること。
+  # schedule:
+  #   - cron: '0 9 * * 5'   # 旧: 毎週金曜 18:00 JST (自動公開)
+
   workflow_dispatch:
+    inputs:
+      keyword:
+        description: 'キーワード（weekly-seo-research の Slack レポートから選んで入力）'
+        required: false
+        default: ''
+      article_date:
+        description: '投稿日（空欄=当日、形式: YYYY-MM-DD）'
+        required: false
+        default: ''
 
 jobs:
   generate-article:
@@ -28,7 +38,7 @@ jobs:
       - name: Install Playwright Chromium
         run: npx playwright install --with-deps chromium
 
-      - name: Generate and publish weekly article
+      - name: Generate and publish article
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           MICROCMS_SERVICE_DOMAIN: ${{ secrets.MICROCMS_SERVICE_DOMAIN }}
@@ -36,4 +46,6 @@ jobs:
           PEXELS_API_KEY: ${{ secrets.PEXELS_API_KEY }}
           SMTP_PASS: ${{ secrets.SMTP_PASS }}
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          KEYWORD_OVERRIDE: ${{ github.event.inputs.keyword }}
+          ARTICLE_DATE: ${{ github.event.inputs.article_date }}
         run: node scripts/weekly-article.mjs

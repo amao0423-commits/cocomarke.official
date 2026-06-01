@@ -280,7 +280,7 @@ if (bodyHtml) {
   let cleanedBody = cleanWixContent(bodyHtml);
   // override.faqs が指定されているときだけ本文FAQをストリップして差し替える
   if (override?.faqs?.length) {
-    cleanedBody = cleanedBody.replace(/<h2[^>]*>\s*よくある質問[（(]?FAQ[）)]?\s*<\/h2>[\s\S]*/gi, '');
+    cleanedBody = cleanedBody.replace(/<h2[^>]*>[^<]*よくある質問[^<]*<\/h2>[\s\S]*/gi, '');
   }
   // override.relatedLinks が指定されているときだけ本文の関連記事ブロックをストリップ
   if (override?.relatedLinks?.length) {

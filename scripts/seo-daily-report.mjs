@@ -302,11 +302,11 @@ async function sendSlack(webhookUrl, { ranked, fixedPages, techSeo, dataAvail, t
   const blocks = [
     {
       type: 'header',
-      text: { type: 'plain_text', text: `📊 SEO改善レポート — ${today}`, emoji: true },
+      text: { type: 'plain_text', text: `📊 デイリーSEO改善レポート — ${today}`, emoji: true },
     },
     {
       type: 'section',
-      text: { type: 'mrkdwn', text: `過去${REPORT_DAYS}日間  ${availLabels}` },
+      text: { type: 'mrkdwn', text: `集計期間: 過去${REPORT_DAYS}日間  ${availLabels}` },
     },
     { type: 'divider' },
     // ── 記事ページ ──

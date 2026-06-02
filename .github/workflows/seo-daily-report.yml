@@ -6,14 +6,12 @@ on:
   workflow_dispatch:        # 手動実行・動作確認用
 
 # ── 必要な GitHub Secrets ───────────────────────────────────────────────────
-# GOOGLE_SERVICE_ACCOUNT_JSON  サービスアカウントのJSON全文
-#   → GSC: サイトの「ユーザーを追加」でメールアドレスを閲覧者として登録
-#   → GA4: プロパティ設定 > アクセス管理 で閲覧者として追加
+# GOOGLE_OAUTH_CLIENT_ID       OAuthクライアントID
+# GOOGLE_OAUTH_CLIENT_SECRET   OAuthクライアントシークレット
+# GOOGLE_OAUTH_REFRESH_TOKEN   リフレッシュトークン（GSC+GA4スコープ）
 # GSC_SITE_URL                 例) https://www.cocomarke.com/
-# GA4_PROPERTY_ID              例) 123456789 (プロパティID)
-# MIXPANEL_PROJECT_ID          MixpanelのProject ID
-# MIXPANEL_API_SECRET          Settings > Service Accounts の secret
-# SLACK_WEBHOOK_URL            Slack Incoming Webhook URL（既存Secretを再利用）
+# GA4_PROPERTY_ID              例) 483595220
+# SLACK_WEBHOOK_URL            Slack Incoming Webhook URL
 # MICROCMS_API_KEY             microCMSコンテンツAPIキー
 # ───────────────────────────────────────────────────────────────────────────
 
@@ -33,11 +31,11 @@ jobs:
 
       - name: Run SEO daily report
         env:
-          GOOGLE_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}
+          GOOGLE_OAUTH_CLIENT_ID: ${{ secrets.GOOGLE_OAUTH_CLIENT_ID }}
+          GOOGLE_OAUTH_CLIENT_SECRET: ${{ secrets.GOOGLE_OAUTH_CLIENT_SECRET }}
+          GOOGLE_OAUTH_REFRESH_TOKEN: ${{ secrets.GOOGLE_OAUTH_REFRESH_TOKEN }}
           GSC_SITE_URL: ${{ secrets.GSC_SITE_URL }}
           GA4_PROPERTY_ID: ${{ secrets.GA4_PROPERTY_ID }}
-          MIXPANEL_PROJECT_ID: ${{ secrets.MIXPANEL_PROJECT_ID }}
-          MIXPANEL_API_SECRET: ${{ secrets.MIXPANEL_API_SECRET }}
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
           MICROCMS_API_KEY: ${{ secrets.MICROCMS_API_KEY }}
         run: node scripts/seo-daily-report.mjs

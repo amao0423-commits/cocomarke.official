@@ -12,7 +12,6 @@
  *   SLACK_WEBHOOK_URL, MICROCMS_API_KEY
  */
 
-import { createSign } from 'crypto';
 import { writeFileSync } from 'fs';
 
 const SITE = 'https://www.cocomarke.com';
@@ -27,31 +26,17 @@ function isoDate(daysAgo = 0) {
   return d.toISOString().slice(0, 10);
 }
 
-// ── Google サービスアカウント JWT 認証 ────────────────────────────────────
+// ── Google OAuth2 認証（リフレッシュトークン方式） ──────────────────────
 
-async function getGoogleToken(sa, scope) {
-  const now = Math.floor(Date.now() / 1000);
-  const claim = {
-    iss: sa.client_email,
-    scope,
-    aud: 'https://oauth2.googleapis.com/token',
-    exp: now + 3600,
-    iat: now,
-  };
-  const header  = Buffer.from(JSON.stringify({ alg: 'RS256', typ: 'JWT' })).toString('base64url');
-  const payload = Buffer.from(JSON.stringify(claim)).toString('base64url');
-  const input   = `${header}.${payload}`;
-  const signer  = createSign('RSA-SHA256');
-  signer.update(input);
-  const sig = signer.sign(sa.private_key, 'base64url');
-  const jwt = `${input}.${sig}`;
-
+async function getGoogleToken(clientId, clientSecret, refreshToken) {
   const res = await fetch('https://oauth2.googleapis.com/token', {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     body: new URLSearchParams({
-      grant_type: 'urn:ietf:params:oauth:grant-type:jwt-bearer',
-      assertion: jwt,
+      client_id:     clientId,
+      client_secret: clientSecret,
+      refresh_token: refreshToken,
+      grant_type:    'refresh_token',
     }),
   });
   const body = await res.json();
@@ -403,7 +388,9 @@ async function sendSlack(webhookUrl, ranked, dataAvail) {
 
 async function main() {
   const {
-    GOOGLE_SERVICE_ACCOUNT_JSON,
+    GOOGLE_OAUTH_CLIENT_ID,
+    GOOGLE_OAUTH_CLIENT_SECRET,
+    GOOGLE_OAUTH_REFRESH_TOKEN,
     GSC_SITE_URL,
     GA4_PROPERTY_ID,
     MIXPANEL_PROJECT_ID,
@@ -424,15 +411,10 @@ async function main() {
   let gscData = {};
   let ga4Data = {};
 
-  if (GOOGLE_SERVICE_ACCOUNT_JSON && GSC_SITE_URL) {
+  if (GOOGLE_OAUTH_CLIENT_ID && GOOGLE_OAUTH_CLIENT_SECRET && GOOGLE_OAUTH_REFRESH_TOKEN && GSC_SITE_URL) {
     try {
-      const sa = JSON.parse(GOOGLE_SERVICE_ACCOUNT_JSON);
-      const scope = [
-        'https://www.googleapis.com/auth/webmasters.readonly',
-        'https://www.googleapis.com/auth/analytics.readonly',
-      ].join(' ');
       console.log('[Google] アクセストークン取得中...');
-      const token = await getGoogleToken(sa, scope);
+      const token = await getGoogleToken(GOOGLE_OAUTH_CLIENT_ID, GOOGLE_OAUTH_CLIENT_SECRET, GOOGLE_OAUTH_REFRESH_TOKEN);
 
       console.log('[GSC] データ取得中...');
       gscData = await fetchGsc(token, GSC_SITE_URL);
@@ -447,7 +429,7 @@ async function main() {
       console.warn(`[Google] スキップ: ${err.message}`);
     }
   } else {
-    console.warn('[Google] GOOGLE_SERVICE_ACCOUNT_JSON / GSC_SITE_URL 未設定 → スキップ');
+    console.warn('[Google] OAuth認証情報 / GSC_SITE_URL 未設定 → スキップ');
   }
 
   // ── Mixpanel ──

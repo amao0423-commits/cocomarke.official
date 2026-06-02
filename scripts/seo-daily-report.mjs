@@ -294,9 +294,8 @@ async function sendSlack(webhookUrl, ranked, dataAvail) {
   });
 
   const availLabels = [
-    dataAvail.gsc       ? '✅ GSC'       : '⬜ GSC（未設定）',
-    dataAvail.ga4       ? '✅ GA4'       : '⬜ GA4（未設定）',
-    dataAvail.clarity   ? '✅ Clarity'   : '⬜ Clarity（未設定）',
+    dataAvail.gsc ? '✅ GSC' : '⬜ GSC（未設定）',
+    dataAvail.ga4 ? '✅ GA4' : '⬜ GA4（未設定）',
   ].join('  ');
 
   const blocks = [

@@ -13,7 +13,6 @@
  *   SLACK_WEBHOOK_URL
  */
 
-import { createSign } from 'crypto';
 import { writeFileSync } from 'fs';
 import Anthropic from '@anthropic-ai/sdk';
 
@@ -55,23 +54,18 @@ async function fetchText(url) {
   }
 }
 
-// ── Google JWT 認証（seo-daily-report.mjs と同じ） ───────────────────────
+// ── Google OAuth2 認証（リフレッシュトークン方式） ──────────────────────
 
-async function getGoogleToken(sa, scope) {
-  const now  = Math.floor(Date.now() / 1000);
-  const claim = { iss: sa.client_email, scope, aud: 'https://oauth2.googleapis.com/token', exp: now + 3600, iat: now };
-  const header  = Buffer.from(JSON.stringify({ alg: 'RS256', typ: 'JWT' })).toString('base64url');
-  const payload = Buffer.from(JSON.stringify(claim)).toString('base64url');
-  const input   = `${header}.${payload}`;
-  const signer  = createSign('RSA-SHA256');
-  signer.update(input);
-  const sig = signer.sign(sa.private_key, 'base64url');
-  const jwt = `${input}.${sig}`;
-
-  const res  = await fetch('https://oauth2.googleapis.com/token', {
+async function getGoogleToken(clientId, clientSecret, refreshToken) {
+  const res = await fetch('https://oauth2.googleapis.com/token', {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: new URLSearchParams({ grant_type: 'urn:ietf:params:oauth:grant-type:jwt-bearer', assertion: jwt }),
+    body: new URLSearchParams({
+      client_id: clientId,
+      client_secret: clientSecret,
+      refresh_token: refreshToken,
+      grant_type: 'refresh_token',
+    }),
   });
   const body = await res.json();
   if (!body.access_token) throw new Error(`Google auth failed: ${JSON.stringify(body)}`);
@@ -347,7 +341,9 @@ async function sendSlackReport(webhookUrl, scored, analyzed, jpTrends, dataAvail
 
 async function main() {
   const {
-    GOOGLE_SERVICE_ACCOUNT_JSON,
+    GOOGLE_OAUTH_CLIENT_ID,
+    GOOGLE_OAUTH_CLIENT_SECRET,
+    GOOGLE_OAUTH_REFRESH_TOKEN,
     GSC_SITE_URL,
     ANTHROPIC_API_KEY,
     MICROCMS_API_KEY,
@@ -360,11 +356,10 @@ async function main() {
 
   // ── GSC クエリデータ取得 ──
   let gscQueries = [];
-  if (GOOGLE_SERVICE_ACCOUNT_JSON && GSC_SITE_URL) {
+  if (GOOGLE_OAUTH_CLIENT_ID && GOOGLE_OAUTH_CLIENT_SECRET && GOOGLE_OAUTH_REFRESH_TOKEN && GSC_SITE_URL) {
     try {
-      const sa = JSON.parse(GOOGLE_SERVICE_ACCOUNT_JSON);
       console.log('[Google] トークン取得中...');
-      const token = await getGoogleToken(sa, 'https://www.googleapis.com/auth/webmasters.readonly');
+      const token = await getGoogleToken(GOOGLE_OAUTH_CLIENT_ID, GOOGLE_OAUTH_CLIENT_SECRET, GOOGLE_OAUTH_REFRESH_TOKEN);
       console.log('[GSC] クエリデータ取得中...');
       gscQueries = await fetchGscQueries(token, GSC_SITE_URL);
       dataAvail.gsc = true;

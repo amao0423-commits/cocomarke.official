@@ -302,7 +302,7 @@ async function sendSlack(webhookUrl, { ranked, fixedPages, techSeo, dataAvail, t
   const blocks = [
     {
       type: 'header',
-      text: { type: 'plain_text', text: `📊 デイリーSEO改善レポート — ${today}`, emoji: true },
+      text: { type: 'plain_text', text: `📊 Daily SEO Report — ${today}`, emoji: true },
     },
     {
       type: 'section',

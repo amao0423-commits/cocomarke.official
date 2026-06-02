@@ -234,7 +234,7 @@ async function sendSlackReport(webhookUrl, scored, analyzed, jpTrends, dataAvail
   const blocks = [
     {
       type: 'header',
-      text: { type: 'plain_text', text: `🔍 週次SEOリサーチ — ${today}`, emoji: true },
+      text: { type: 'plain_text', text: `🔍 Weekly SEO Research — ${today}`, emoji: true },
     },
     {
       type: 'section',

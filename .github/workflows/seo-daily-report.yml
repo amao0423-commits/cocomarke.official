@@ -36,6 +36,8 @@ jobs:
           GOOGLE_OAUTH_REFRESH_TOKEN: ${{ secrets.GOOGLE_OAUTH_REFRESH_TOKEN }}
           GSC_SITE_URL: ${{ secrets.GSC_SITE_URL }}
           GA4_PROPERTY_ID: ${{ secrets.GA4_PROPERTY_ID }}
+          CLARITY_PROJECT_ID: ${{ secrets.CLARITY_PROJECT_ID }}
+          CLARITY_API_TOKEN: ${{ secrets.CLARITY_API_TOKEN }}
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
           MICROCMS_API_KEY: ${{ secrets.MICROCMS_API_KEY }}
         run: node scripts/seo-daily-report.mjs

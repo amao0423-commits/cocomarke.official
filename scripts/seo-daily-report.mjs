@@ -132,51 +132,32 @@ async function fetchGa4(token, propertyId) {
   return result;
 }
 
-// ── Mixpanel: CVイベント取得（JQL） ──────────────────────────────────────
+// ── Microsoft Clarity: エンゲージメント取得 ──────────────────────────────
 
-async function fetchMixpanel(projectId, apiSecret) {
-  // GA4トラッキングコードに合わせて contact_click / article_cta_click を集計
-  const script = `
-function main() {
-  return Events({
-    from_date: '${isoDate(REPORT_DAYS)}',
-    to_date:   '${isoDate(2)}',
-    event_selectors: [
-      { event: 'contact_click' },
-      { event: 'article_cta_click' },
-      { event: 'document_click' }
-    ]
-  })
-  .groupBy(
-    ['properties.page_slug', 'name'],
-    mixpanel.reducer.count()
-  )
-  .map(function(r) {
-    return { slug: r.key[0] || '', event: r.key[1], count: r.value };
-  });
-}`;
+async function fetchClarity(projectId, apiToken) {
+  const endDate   = isoDate(2);
+  const startDate = isoDate(REPORT_DAYS);
+  const url = `https://www.clarity.ms/export/api/v1/${projectId}/pages` +
+    `?startDate=${startDate}&endDate=${endDate}&pageSize=500`;
 
-  const auth = Buffer.from(`${apiSecret}:`).toString('base64');
-  const res = await fetch('https://data.mixpanel.com/api/2.0/jql', {
-    method: 'POST',
-    headers: {
-      Authorization: `Basic ${auth}`,
-      'Content-Type': 'application/x-www-form-urlencoded',
-    },
-    body: new URLSearchParams({ script }),
+  const res = await fetch(url, {
+    headers: { Authorization: `Bearer ${apiToken}` },
   });
-  if (!res.ok) throw new Error(`Mixpanel ${res.status}: ${await res.text()}`);
-  const rows = await res.json();
+  if (!res.ok) throw new Error(`Clarity ${res.status}: ${await res.text()}`);
+  const data = await res.json();
 
   const result = {};
-  for (const item of Array.isArray(rows) ? rows : []) {
-    // page_slug は "/blog/article-id/" 形式
-    const slug = String(item.slug ?? '').replace('/blog/', '').replace(/\/$/, '');
-    if (!slug) continue;
-    if (!result[slug]) result[slug] = { contactClicks: 0, ctaClicks: 0, docClicks: 0 };
-    if (item.event === 'contact_click')     result[slug].contactClicks += item.count;
-    if (item.event === 'article_cta_click') result[slug].ctaClicks    += item.count;
-    if (item.event === 'document_click')    result[slug].docClicks     += item.count;
+  for (const item of data.value ?? data ?? []) {
+    const rawUrl = item.url ?? item.pageUrl ?? '';
+    const match  = rawUrl.match(/\/blog\/([^/?#]+)/);
+    if (!match) continue;
+    const slug = match[1];
+    result[slug] = {
+      engagementRate: item.engagementRate ?? item.engagedRate ?? null,
+      scrollDepth:    item.scrollDepth ?? null,
+      sessions:       item.totalSessionCount ?? item.sessions ?? null,
+      rageclicks:     item.rageClickCount ?? null,
+    };
   }
   return result;
 }
@@ -270,15 +251,28 @@ function scoreArticle(gsc, ga4, mp) {
     }
   }
 
-  // ── Mixpanel: CV シグナル ──
-  if (mp && ga4) {
-    const cvTotal = (mp.contactClicks ?? 0) + (mp.ctaClicks ?? 0);
-    if (ga4.sessions >= 100 && cvTotal === 0) {
+  // ── Clarity: エンゲージメント シグナル ──
+  if (mp) {
+    const { engagementRate, scrollDepth, rageclicks } = mp;
+    if (engagementRate !== null && engagementRate < 0.35) {
+      pts += 25;
+      triggers.push('low_engagement');
+      reasons.push(`Clarityエンゲージメント率 ${(engagementRate * 100).toFixed(0)}%（目標35%+）`);
+      actions.push('導入文を改善して最初の10秒で読者を引き込む');
+      actions.push('ファーストビューにTOC・リード文・画像を配置する');
+    }
+    if (scrollDepth !== null && scrollDepth < 40) {
       pts += 20;
-      triggers.push('no_cv');
-      reasons.push('CV 0件（100+ セッションあり）');
-      actions.push('CTAボタンの文言を「相談する」「診断する」に変更');
-      actions.push('CTA をH2の直後にも中間配置する');
+      triggers.push('low_scroll');
+      reasons.push(`スクロール深度 ${scrollDepth.toFixed(0)}%（記事の半分以下）`);
+      actions.push('冒頭に結論・要約ボックスを追加して離脱を防ぐ');
+      actions.push('長すぎる段落を分割・箇条書きに変換する');
+    }
+    if (rageclicks !== null && rageclicks > 5) {
+      pts += 15;
+      triggers.push('rageclicks');
+      reasons.push(`レイジクリック ${rageclicks}件（UI不具合の可能性）`);
+      actions.push('クリックされている要素を確認しリンク切れ・誤操作を修正');
     }
   }
 
@@ -302,7 +296,7 @@ async function sendSlack(webhookUrl, ranked, dataAvail) {
   const availLabels = [
     dataAvail.gsc       ? '✅ GSC'       : '⬜ GSC（未設定）',
     dataAvail.ga4       ? '✅ GA4'       : '⬜ GA4（未設定）',
-    dataAvail.mixpanel  ? '✅ Mixpanel'  : '⬜ Mixpanel（未設定）',
+    dataAvail.clarity   ? '✅ Clarity'   : '⬜ Clarity（未設定）',
   ].join('  ');
 
   const blocks = [
@@ -393,8 +387,8 @@ async function main() {
     GOOGLE_OAUTH_REFRESH_TOKEN,
     GSC_SITE_URL,
     GA4_PROPERTY_ID,
-    MIXPANEL_PROJECT_ID,
-    MIXPANEL_API_SECRET,
+    CLARITY_PROJECT_ID,
+    CLARITY_API_TOKEN,
     SLACK_WEBHOOK_URL,
     MICROCMS_API_KEY,
   } = process.env;
@@ -432,18 +426,18 @@ async function main() {
     console.warn('[Google] OAuth認証情報 / GSC_SITE_URL 未設定 → スキップ');
   }
 
-  // ── Mixpanel ──
+  // ── Microsoft Clarity ──
   let mpData = {};
-  if (MIXPANEL_PROJECT_ID && MIXPANEL_API_SECRET) {
+  if (CLARITY_PROJECT_ID && CLARITY_API_TOKEN) {
     try {
-      console.log('[Mixpanel] CVイベント取得中...');
-      mpData = await fetchMixpanel(MIXPANEL_PROJECT_ID, MIXPANEL_API_SECRET);
-      console.log(`  → ${Object.keys(mpData).length} ページにイベントあり`);
+      console.log('[Clarity] エンゲージメントデータ取得中...');
+      mpData = await fetchClarity(CLARITY_PROJECT_ID, CLARITY_API_TOKEN);
+      console.log(`  → ${Object.keys(mpData).length} ページ`);
     } catch (err) {
-      console.warn(`[Mixpanel] スキップ: ${err.message}`);
+      console.warn(`[Clarity] スキップ: ${err.message}`);
     }
   } else {
-    console.warn('[Mixpanel] 認証情報未設定 → スキップ');
+    console.warn('[Clarity] 認証情報未設定 → スキップ');
   }
 
   // ── 全記事スコアリング ──
@@ -476,7 +470,7 @@ async function main() {
     dataAvailability: {
       gsc:      Object.keys(gscData).length > 0,
       ga4:      Object.keys(ga4Data).length > 0,
-      mixpanel: Object.keys(mpData).length > 0,
+      clarity:  Object.keys(mpData).length > 0,
     },
     ranked,
     all: scored.sort((a, b) => b.score.pts - a.score.pts),

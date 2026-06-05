@@ -113,6 +113,22 @@ export function escapeHtml(str: string): string {
     .replace(/"/g, '&quot;');
 }
 
+// ---- Fetch all blogs across pagination (microCMS caps limit at 100 per request) ----
+export async function fetchAllBlogs<T = any>(fields?: string): Promise<T[]> {
+  const all: T[] = [];
+  let offset = 0;
+  while (true) {
+    const res = await client.getList<T>({
+      endpoint: 'blogs',
+      queries: { limit: 100, offset, orders: '-publishedAt', ...(fields ? { fields } : {}) },
+    });
+    all.push(...res.contents);
+    offset += 100;
+    if (offset >= res.totalCount || res.contents.length === 0) break;
+  }
+  return all;
+}
+
 // ---- In-memory cache ----
 type Cache<T> = { data: T; at: number };
 const TTL = 10 * 60 * 1000;

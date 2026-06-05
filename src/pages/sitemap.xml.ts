@@ -1,5 +1,5 @@
 import type { APIRoute } from 'astro';
-import { client, mapBlog } from '../lib/microcms';
+import { mapBlog, fetchAllBlogs } from '../lib/microcms';
 
 const BASE = 'https://www.cocomarke.com';
 
@@ -15,8 +15,8 @@ export const GET: APIRoute = async () => {
   let blogEntries: { url: string; lastmod: string; priority: string; changefreq: string }[] = [];
 
   try {
-    const res = await client.getList<any>({ endpoint: 'blogs', queries: { limit: 100, orders: '-publishedAt' } });
-    blogEntries = res.contents.map((raw: any) => {
+    const all = await fetchAllBlogs<any>();
+    blogEntries = all.map((raw: any) => {
       const blog = mapBlog(raw);
       return {
         url: `/blog/${blog.id}/`,

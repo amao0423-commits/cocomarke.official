@@ -14,7 +14,7 @@ export const SEO_OVERRIDES: Record<string, SeoOverride> = {
     faqs: [
       {
         q: 'メンションとタグ付けはどう違いますか？',
-        a: 'メンション（@mention）はテキスト内に @ユー���ー名 を入力して相手のプロフィールへリンクする機能です。タグ付けは写真・動画の特定位置に人物を関連付ける機能で、相手の「タグ付けされた投稿」タブに表示されます。通知の種類・表示場所・相手が非表示にできる範囲がそれぞれ異なります。',
+        a: 'メンション（@mention）はテキスト内に @ユーザー名 を入力して相手のプロフィールへリンクする機能です。タグ付けは写真・動画の特定位置に人物を関連付ける機能で、相手の「タグ付けされた投稿」タブに表示されます。通知の種類・表示場所・相手が非表示にできる範囲がそれぞれ異なります。',
       },
       {
         q: 'メンションしても通知が届かないのはなぜですか？',
@@ -30,7 +30,7 @@ export const SEO_OVERRIDES: Record<string, SeoOverride> = {
       },
     ],
     relatedLinks: [
-      { href: '/blog/instagram-collab-post-guide-2025/', label: 'Instagramコ���ボ投稿の使い方と活用法' },
+      { href: '/blog/instagram-collab-post-guide-2025/', label: 'Instagramコラボ投稿の使い方と活用法' },
       { href: '/blog/instagram-profile-strategy-2025/', label: 'Instagramプロフィールの最適化戦略' },
       { href: '/blog/instagram-algorithm-latest-complete-guide/', label: 'Instagramアルゴリズム完全ガイド' },
     ],
@@ -101,7 +101,7 @@ export const SEO_OVERRIDES: Record<string, SeoOverride> = {
     faqs: [
       {
         q: 'ハッシュタグは本当に5個以下がいいですか？',
-        a: 'はい。2023年にInstagramのCEO Adam Mosseriが「��ッシュタグは3〜5個程度が推奨」と公式に発言しています。多用がリーチを下げるという確証はありませんが、関連性の高い少数のタグのほうがアルゴリズムに正確なコンテンツ分類を促せます。',
+        a: 'はい。2023年にInstagramのCEO Adam Mosseriが「ハッシュタグは3〜5個程度が推奨」と公式に発言しています。多用がリーチを下げるという確証はありませんが、関連性の高い少数のタグのほうがアルゴリズムに正確なコンテンツ分類を促せます。',
       },
       {
         q: 'ハッシュタグを多く使うと検索されにくくなりますか？',

@@ -1,6 +1,6 @@
 ---
 import sampleHtml from '../../../templates/blog/sample/index.html?raw';
-import { client, formatDate, escapeHtml, cached, mapBlog, type Blog } from '../../lib/microcms';
+import { client, formatDate, escapeHtml, cached, mapBlog, fetchAllBlogs, type Blog } from '../../lib/microcms';
 import { SEO_OVERRIDES } from '../../lib/blogSeoOverrides';
 
 const { id } = Astro.params;
@@ -40,10 +40,18 @@ const relatedBlogs = [...sameCatBlogs, ...otherBlogs].slice(0, 5);
 
 // SEO overrides for specific articles
 const override = SEO_OVERRIDES[id ?? ''];
-const blogIds = new Set(recentBlogs.map(b => b.id));
+// Validate curated related-links against ALL blog IDs (not just the recent 20),
+// so links to older articles aren't silently dropped. Fail-open on fetch error.
+const allBlogIds = override?.relatedLinks?.length
+  ? await cached<Set<string>>('blogs-all-ids', async () => {
+      const ids = await fetchAllBlogs<{ id: string }>('id');
+      return new Set(ids.map(b => b.id));
+    }).catch(() => new Set<string>())
+  : new Set<string>();
 const validRelatedLinks = (override?.relatedLinks ?? []).filter(l => {
+  if (allBlogIds.size === 0) return true; // fetch failed → trust curated links
   const slug = l.href.replace('/blog/', '').replace(/\/$/, '');
-  return blogIds.has(slug);
+  return allBlogIds.has(slug);
 });
 
 let html = sampleHtml;
@@ -280,7 +288,7 @@ if (bodyHtml) {
   let cleanedBody = cleanWixContent(bodyHtml);
   // override.faqs が指定されているときだけ本文FAQをストリップして差し替える
   if (override?.faqs?.length) {
-    cleanedBody = cleanedBody.replace(/<h2[^>]*>[^<]*よくある質問[^<]*<\/h2>[\s\S]*/gi, '');
+    cleanedBody = cleanedBody.replace(/<h2[^>]*>[^<]*よくある質問[^<]*<\/h2>[\s\S]*?(?=<h2|$)/gi, '');
   }
   // override.relatedLinks が指定されているときだけ本文の関連記事ブロックをストリップ
   if (override?.relatedLinks?.length) {

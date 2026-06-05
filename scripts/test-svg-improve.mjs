@@ -14,7 +14,8 @@ import fs from 'fs';
 
 const MICROCMS_API_KEY  = process.env.MICROCMS_WRITE_API_KEY ?? process.env.MICROCMS_API_KEY;
 const MICROCMS_DOMAIN   = 'cocomarke';
-const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY ?? 'sk-ant-d01_i-nWsLlbXRVt33Kgye5qhZZLqcU5Zx8SWVajLpO6xk0VXt0G2AKSRhM5BF-4MhR_U8DgJk3RDvZj-cKx3NwCgA'; // fallback for test
+const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
+if (!ANTHROPIC_API_KEY) { console.error('ANTHROPIC_API_KEY env var required'); process.exit(1); }
 const ARTICLE_ID = 'how-to-check-instagram-dm-without-marking-as-read';
 
 const anthropic = new Anthropic({ apiKey: ANTHROPIC_API_KEY });

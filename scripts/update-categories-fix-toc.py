@@ -11,8 +11,11 @@ from urllib.request import urlopen, Request
 from urllib.error import HTTPError
 
 import sys
+import os
 
-API_KEY = sys.argv[1] if len(sys.argv) > 1 else "qkw2TEC77QumO0EIJnS1wp0FtMlXQQuelmY5"
+API_KEY = sys.argv[1] if len(sys.argv) > 1 else (os.environ.get("MICROCMS_WRITE_API_KEY") or os.environ.get("MICROCMS_API_KEY"))
+if not API_KEY:
+    raise SystemExit("microCMS API key required: pass as first arg or set MICROCMS_WRITE_API_KEY")
 BASE_URL = "https://cocomarke.microcms.io/api/v1/blogs"
 
 # ── カテゴリーマッピング ──────────────────────────────

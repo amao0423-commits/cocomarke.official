@@ -8,7 +8,7 @@ import { readFileSync } from 'fs';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 
-const CONTENT_KEY = 'qkw2TEC77QumO0EIJnS1wp0FtMlXQQuelmY5';
+const CONTENT_KEY = process.env.MICROCMS_WRITE_API_KEY ?? process.env.MICROCMS_API_KEY;
 const SERVICE     = 'cocomarke';
 const ARTICLE_ID  = 'instagram-story-highlights-guide-2026';
 const TITLE       = 'ショート動画広告（短尺動画広告）とは？売上アップにつなげるポイントも解説';

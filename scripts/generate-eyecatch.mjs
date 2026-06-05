@@ -12,7 +12,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 
 const MGMT_KEY    = process.argv[2];
-const CONTENT_KEY = 'qkw2TEC77QumO0EIJnS1wp0FtMlXQQuelmY5';
+const CONTENT_KEY = process.env.MICROCMS_WRITE_API_KEY ?? process.env.MICROCMS_API_KEY;
 const SERVICE     = 'cocomarke';
 const BLOGS_API   = `https://${SERVICE}.microcms.io/api/v1/blogs`;
 const MEDIA_API   = `https://${SERVICE}.microcms-management.io/api/v1/media`;

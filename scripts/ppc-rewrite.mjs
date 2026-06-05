@@ -4,9 +4,9 @@
  * 目標: 8000字以上、検索意図に完全対応
  */
 
-const MICROCMS_API_KEY = process.env.MICROCMS_API_KEY ?? 'qkw2TEC77QumO0EIJnS1wp0FtMlXQQuelmY5';
+const MICROCMS_API_KEY = process.env.MICROCMS_WRITE_API_KEY ?? process.env.MICROCMS_API_KEY;
 const MICROCMS_DOMAIN  = process.env.MICROCMS_SERVICE_DOMAIN ?? 'cocomarke';
-const PEXELS_API_KEY   = process.env.PEXELS_API_KEY ?? 'NmEpHgSEbtq6tK5wEd3OziJm101VLGpyeYqV5ZMxhIrMtScj9WNjcN5Z';
+const PEXELS_API_KEY   = process.env.PEXELS_API_KEY;
 
 const ARTICLE_ID = 'ppc-advertising-beginners-success-guide';
 const NEW_TITLE  = '初心者向けPPC広告の始め方｜成果を出す運用のコツをわかりやすく解説';

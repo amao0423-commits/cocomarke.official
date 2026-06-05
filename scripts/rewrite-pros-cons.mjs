@@ -3,7 +3,7 @@
  * instagram-pros-cons-marketing-managers のSEOリライト
  */
 
-const MICROCMS_KEY    = 'qkw2TEC77QumO0EIJnS1wp0FtMlXQQuelmY5';
+const MICROCMS_KEY    = process.env.MICROCMS_WRITE_API_KEY ?? process.env.MICROCMS_API_KEY;
 const MICROCMS_DOMAIN = 'cocomarke';
 const ARTICLE_ID      = 'instagram-pros-cons-marketing-managers';
 

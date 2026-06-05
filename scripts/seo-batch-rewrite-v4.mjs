@@ -18,10 +18,10 @@
 
 import Anthropic from '@anthropic-ai/sdk';
 
-const MICROCMS_KEY    = 'qkw2TEC77QumO0EIJnS1wp0FtMlXQQuelmY5';
+const MICROCMS_KEY    = process.env.MICROCMS_WRITE_API_KEY ?? process.env.MICROCMS_API_KEY;
 const MICROCMS_DOMAIN = 'cocomarke';
 const ANTHROPIC_KEY   = process.env.ANTHROPIC_API_KEY ?? '';
-const PEXELS_KEY      = 'NmEpHgSEbtq6tK5wEd3OziJm101VLGpyeYqV5ZMxhIrMtScj9WNjcN5Z';
+const PEXELS_KEY      = process.env.PEXELS_API_KEY;
 const DELAY_MS        = 5000;
 
 // ─── Already rewritten — skip ─────────────────────────────────────────────────

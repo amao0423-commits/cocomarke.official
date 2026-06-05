@@ -2,7 +2,7 @@
 // ガイドラインテンプレ section: pre/code → styled blockquotes/tables
 // + 中段CTA → 🌙 dark card
 
-const KEY    = 'qkw2TEC77QumO0EIJnS1wp0FtMlXQQuelmY5';
+const KEY    = process.env.MICROCMS_WRITE_API_KEY ?? process.env.MICROCMS_API_KEY;
 const DOMAIN = 'cocomarke';
 const ID     = 'insta-influencer-marketing-guide';
 

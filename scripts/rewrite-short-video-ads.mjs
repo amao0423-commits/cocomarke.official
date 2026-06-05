@@ -4,7 +4,7 @@
  * 「ショート動画広告（短尺動画広告）とは？売上アップにつなげるポイントも解説」に全面差し替え
  */
 
-const MICROCMS_KEY    = 'qkw2TEC77QumO0EIJnS1wp0FtMlXQQuelmY5';
+const MICROCMS_KEY    = process.env.MICROCMS_WRITE_API_KEY ?? process.env.MICROCMS_API_KEY;
 const MICROCMS_DOMAIN = 'cocomarke';
 const ARTICLE_ID      = 'instagram-story-highlights-guide-2026';
 

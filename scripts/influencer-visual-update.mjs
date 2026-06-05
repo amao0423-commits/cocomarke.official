@@ -8,9 +8,9 @@
  * - 不要な空行（<p><br></p>）削除
  */
 
-const KEY    = process.env.MICROCMS_API_KEY    ?? 'qkw2TEC77QumO0EIJnS1wp0FtMlXQQuelmY5';
+const KEY    = process.env.MICROCMS_WRITE_API_KEY ?? process.env.MICROCMS_API_KEY;
 const DOMAIN = process.env.MICROCMS_DOMAIN     ?? 'cocomarke';
-const PEXELS = process.env.PEXELS_API_KEY      ?? 'NmEpHgSEbtq6tK5wEd3OziJm101VLGpyeYqV5ZMxhIrMtScj9WNjcN5Z';
+const PEXELS = process.env.PEXELS_API_KEY;
 const ID     = 'insta-influencer-marketing-guide';
 
 const sleep = ms => new Promise(r => setTimeout(r, ms));

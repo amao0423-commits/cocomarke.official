@@ -5,7 +5,7 @@
 //  3. Add ≥3 internal backlinks per article
 //  4. Fix copy-paste FAQ answers in influencer article
 
-const KEY    = process.env.MICROCMS_API_KEY ?? 'qkw2TEC77QumO0EIJnS1wp0FtMlXQQuelmY5';
+const KEY    = process.env.MICROCMS_WRITE_API_KEY ?? process.env.MICROCMS_API_KEY;
 const DOMAIN = 'cocomarke';
 
 async function get(id) {

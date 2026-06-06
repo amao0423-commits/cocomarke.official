@@ -394,11 +394,32 @@ const breadcrumbSchema = JSON.stringify({
     { '@type': 'ListItem', position: 3, name: blog.title, item: pageUrl },
   ],
 });
-// FAQPage schema (override articles only)
-const faqPageSchema = override?.faqs?.length ? JSON.stringify({
+// FAQPage schema: override 記事は手動マップを使用。それ以外は本文「よくある質問」を自動パースして生成。
+// 本文FAQ(microCMS content)構造: <h2>よくある質問</h2> に続く <p><strong>Q…</strong></p><p>回答</p> の繰り返し。
+function stripFaqTags(s) {
+  return s.replace(/<[^>]+>/g, '').replace(/&amp;/g, '&').replace(/\s+/g, ' ').trim();
+}
+function extractBodyFaqs(htmlStr) {
+  if (!htmlStr) return [];
+  const sec = htmlStr.match(/<h2[^>]*>[^<]*よくある質問[^<]*<\/h2>([\s\S]*?)(?=<h2|$)/i);
+  if (!sec) return [];
+  const faqs = [];
+  const re = /<p>\s*<strong>([\s\S]*?)<\/strong>\s*<\/p>\s*<p>([\s\S]*?)<\/p>/gi;
+  let m;
+  while ((m = re.exec(sec[1])) !== null) {
+    const q = stripFaqTags(m[1]).replace(/^Q\s*[.．:：]?\s*/i, '').trim();
+    const a = stripFaqTags(m[2]).trim();
+    if (q && a) faqs.push({ q, a });
+  }
+  return faqs;
+}
+const faqForSchema = override?.faqs?.length
+  ? override.faqs
+  : extractBodyFaqs(blog.body ?? blog.content ?? '');
+const faqPageSchema = faqForSchema.length ? JSON.stringify({
   '@context': 'https://schema.org',
   '@type': 'FAQPage',
-  mainEntity: override.faqs.map(f => ({
+  mainEntity: faqForSchema.map(f => ({
     '@type': 'Question',
     name: f.q,
     acceptedAnswer: { '@type': 'Answer', text: f.a },

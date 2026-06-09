@@ -1,6 +1,7 @@
 ---
 import blogIndexHtml from '../../../templates/blog/index.html?raw';
 import { client, formatDate, escapeHtml, cached, mapBlog, type Blog } from '../../lib/microcms';
+import { injectGtm } from '../../lib/gtm';
 
 const blogs = await cached<Blog[]>('blogs-list', async () => {
   const res = await client.getList<any>({
@@ -125,6 +126,7 @@ const blogIndexUrl = 'https://www.cocomarke.com/blog/';
 const blogCanonical = `<link rel="canonical" href="${blogIndexUrl}"><meta property="og:url" content="${blogIndexUrl}">`;
 html = html.replace(/<link rel="canonical"[^>]*>/i, '');
 html = html.replace('</head>', blogCanonical + '</head>');
+html = injectGtm(html);
 
 return new Response(html, { headers: { 'Content-Type': 'text/html; charset=utf-8' } });
 ---

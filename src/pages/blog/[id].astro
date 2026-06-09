@@ -2,11 +2,12 @@
 import sampleHtml from '../../../templates/blog/sample/index.html?raw';
 import { client, formatDate, escapeHtml, cached, mapBlog, type Blog } from '../../lib/microcms';
 import { SEO_OVERRIDES } from '../../lib/blogSeoOverrides';
+import { injectGtm } from '../../lib/gtm';
 
 const { id } = Astro.params;
 
 if (id === 'sample') {
-  return new Response(sampleHtml, { headers: { 'Content-Type': 'text/html; charset=utf-8' } });
+  return new Response(injectGtm(sampleHtml), { headers: { 'Content-Type': 'text/html; charset=utf-8' } });
 }
 
 // 記事取得と関連記事取得を並列実行
@@ -451,6 +452,7 @@ document.addEventListener('click',function(e){
 html = html.replace(/<link rel="canonical"[^>]*>/i, '');
 html = html.replace('</head>', canonical + ogTags + schemaScripts + articleCss + '</head>');
 html = html.replace('</body>', tocJs + ga4Js + '</body>');
+html = injectGtm(html);
 
 return new Response(html, {
   headers: {

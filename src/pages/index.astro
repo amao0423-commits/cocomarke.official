@@ -1,6 +1,7 @@
 ---
 import indexHtml from '../../templates/index.html?raw';
 import { client, formatDate, escapeHtml, cached, mapFaq, mapNews, mapBlog, type Faq, type News, type Blog } from '../lib/microcms';
+import { injectGtm } from '../lib/gtm';
 
 const [faqs, newsItems, topBlogs] = await Promise.all([
   cached<Faq[]>('faq', async () => {
@@ -131,6 +132,7 @@ const scriptClose = ['<', '/', 's', 'c', 'r', 'i', 'p', 't', '>'].join('');
 const accordionFn = "document.querySelectorAll('#faq button[aria-expanded]').forEach(function(b){b.addEventListener('click',function(){var p=this.nextElementSibling,o=this.getAttribute('aria-expanded')==='true';this.setAttribute('aria-expanded',String(!o));p.classList.toggle('hidden');var v=this.querySelector('.faq-v');if(v)v.style.display=o?'':'none';});});";
 const newsPaginationFn = "(function(){var pages=document.querySelectorAll('.news-page'),dots=document.querySelectorAll('.news-dot');if(!pages.length||!dots.length)return;function show(n){pages.forEach(function(p,i){p.style.display=i===n?'block':'none';});dots.forEach(function(d,i){d.style.background=i===n?'#005bea':'#ccc';});}dots.forEach(function(d){d.addEventListener('click',function(){show(parseInt(this.dataset.target));});});})();";
 html = html.replace('</body>', scriptOpen + accordionFn + newsPaginationFn + scriptClose + '</body>');
+html = injectGtm(html);
 
 return new Response(html, { headers: { 'Content-Type': 'text/html; charset=utf-8' } });
 ---

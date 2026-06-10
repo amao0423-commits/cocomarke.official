@@ -23,6 +23,43 @@ const pageUrl = 'https://www.cocomarke.com/' + String(slug) + '/';
 const staticCanonical = `<link rel="canonical" href="${pageUrl}"><meta property="og:url" content="${pageUrl}">`;
 html = html.replace(/<link rel="canonical"[^>]*>/i, '');
 html = html.replace('</head>', staticCanonical + '</head>');
+
+if (String(slug) === 'contact/thanks') {
+  const leadTrackingScript = `<script>
+(function(){
+  var storageKey='cocomarke_meta_lead_event';
+  var now=Date.now();
+  var stored=null;
+  try{stored=JSON.parse(sessionStorage.getItem(storageKey)||'null');}catch(e){}
+  if(!stored||!stored.event_id||!stored.created_at||now-stored.created_at>1800000){
+    var randomPart=(window.crypto&&crypto.randomUUID)?crypto.randomUUID():String(now)+'-'+Math.random().toString(16).slice(2);
+    stored={event_id:'lead-'+randomPart,created_at:now};
+    try{sessionStorage.setItem(storageKey,JSON.stringify(stored));}catch(e){}
+  }
+  function sendLead(){
+    if(typeof fbq==='function'){
+      fbq('track','Lead',{}, {eventID: stored.event_id});
+    }
+    fetch('/api/meta-capi',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        event_id:stored.event_id,
+        event_source_url:window.location.href
+      }),
+      keepalive:true
+    }).catch(function(){});
+  }
+  if(document.readyState==='loading'){
+    document.addEventListener('DOMContentLoaded',sendLead,{once:true});
+  }else{
+    sendLead();
+  }
+})();
+</script>`;
+  html = html.replace('</body>', leadTrackingScript + '</body>');
+}
+
 html = injectGtm(html);
 
 return new Response(html, { headers: { 'Content-Type': 'text/html; charset=utf-8' } });

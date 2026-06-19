@@ -53,7 +53,20 @@ const date = formatDate(blog.day ?? blog.publishedAt);
 const cat = typeof blog.category === 'string' ? blog.category : blog.category?.name ?? '';
 const eyecatchUrl = blog.eyecatch?.url;
 
-html = html.replace('>第3階層ページ<', '>' + escapeHtml(blog.title) + '<');
+html = html.replace(
+  '<ol class="flex items-center gap-2 text-xs text-[#333] leading-[1.4]">',
+  '<ol class="flex items-center gap-2 text-xs text-[#333] leading-[1.4] overflow-hidden">'
+);
+html = html.replace(
+  '<li><a class="font-medium hover:opacity-70 transition-opacity" href="/">トップページ</a></li>',
+  '<li class="whitespace-nowrap shrink-0"><a class="font-medium hover:opacity-70 transition-opacity" href="/">トップページ</a></li>'
+);
+html = html.replace(
+  '<li><a class="font-medium hover:opacity-70 transition-opacity" href="/blog/">お役立ち情報</a></li>',
+  '<li class="whitespace-nowrap shrink-0"><a class="font-medium hover:opacity-70 transition-opacity" href="/blog/">お役立ち情報</a></li>'
+);
+html = html.replace('>第3階層ページ<', ' class="min-w-0 truncate">' + escapeHtml(blog.title) + '<');
+html = html.replace('</head>', '<style>nav ol>li.shrink-0+li{flex-shrink:0}</style></head>');
 html = html.replace('>0000.00.00<', '>' + date + '<');
 html = html.replace(/(<h1[^>]*>).*?(<\/h1>)/s, '$1' + escapeHtml(blog.title) + '$2');
 if (cat) html = html.replaceAll('>ダミーカテゴリ<', '>' + escapeHtml(cat) + '<');

@@ -32,8 +32,20 @@ src="https://www.facebook.com/tr?id=${META_PIXEL_ID}&ev=PageView&noscript=1"
 /></noscript>
 <!-- End Meta Pixel Code -->`;
 
+function injectNewsNav(html: string) {
+  return html
+    .replace(
+      '<li><a class="hover:text-primary transition-colors duration-200" href="/#faq">よくある質問</a></li><li><a class="hover:text-primary transition-colors duration-200" href="/blog/">',
+      '<li><a class="hover:text-primary transition-colors duration-200" href="/#faq">よくある質問</a></li><li><a class="hover:text-primary transition-colors duration-200" href="/news/">お知らせ</a></li><li><a class="hover:text-primary transition-colors duration-200" href="/blog/">'
+    )
+    .replace(
+      '<li><a href="/#faq"><div class="text-base font-medium">よくある質問</div></a></li><li><a href="/blog/">',
+      '<li><a href="/#faq"><div class="text-base font-medium">よくある質問</div></a></li><li><a href="/news/"><div class="text-base font-medium">お知らせ</div></a></li><li><a href="/blog/">'
+    );
+}
+
 export function injectGtm(html: string) {
-  let result = html;
+  let result = injectNewsNav(html);
 
   if (!result.includes(GTM_ID)) {
     result = result.includes('</head>')

@@ -38,12 +38,10 @@ if (newsItems.length > 0) {
 
     const buildRows = (page: News[], pageIdx: number) =>
       page.map((item, i) =>
-        '<div class="flex flex-col lg:flex-row gap-2 lg:gap-4 items-start py-6 border-b border-[#8d8d8d] ' + (i === 0 ? 'border-t' : '') + '">' +
-        '<p class="text-base text-[#005BEA] font-normal leading-[30px] tracking-[0.03em] whitespace-nowrap">' + formatDate(item.day ?? item.publishedAt) + '</p>' +
-        '<div class="flex-1">' +
-        '<p class="text-base leading-[30px] tracking-[0.03em]">' + escapeHtml(item.title) + '</p>' +
-        (item.content ? '<p class="text-sm text-gray-600 leading-[1.7] mt-1">' + escapeHtml(item.content) + '</p>' : '') +
-        '</div></div>'
+        '<a class="flex flex-col lg:flex-row gap-2 lg:gap-6 items-start py-6 border-b border-[#8d8d8d] hover:opacity-70 transition-opacity ' + (i === 0 ? 'border-t' : '') + '" href="/news/' + item.id + '/">' +
+        '<time class="text-base text-[#005BEA] font-normal leading-[30px] tracking-[0.03em] whitespace-nowrap">' + formatDate(item.day ?? item.publishedAt) + '</time>' +
+        '<p class="flex-1 text-base leading-[30px] tracking-[0.03em] text-[#333]">' + escapeHtml(item.title) + '</p>' +
+        '</a>'
       ).join('');
 
     const pagesHtml = pages.map((page, pi) =>
@@ -62,7 +60,8 @@ if (newsItems.length > 0) {
         '</div>'
       : '';
 
-    html = pre + pagesHtml + dotsHtml + closing + rest.slice(faqIdx);
+    const newsMoreLink = '<div class="flex justify-center mt-10"><a class="inline-flex items-center justify-center h-[50px] px-8 rounded-full bg-gradient-to-r from-[#00c6fb] to-[#0965f6] text-white text-sm lg:text-base font-semibold hover:opacity-90 transition-opacity" href="/news/">お知らせ一覧を見る</a></div>';
+    html = pre + pagesHtml + dotsHtml + newsMoreLink + closing + rest.slice(faqIdx);
   }
 }
 

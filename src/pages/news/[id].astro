@@ -1,0 +1,134 @@
+---
+import shellHtml from '../../../templates/contact/thanks/index.html?raw';
+import { client, escapeHtml, formatDate, mapNews } from '../../lib/microcms';
+import { injectGtm } from '../../lib/gtm';
+
+const { id } = Astro.params;
+const rawNews = await client.get<any>({ endpoint: 'news', contentId: id as string }).catch(() => null);
+
+if (!rawNews) return Astro.redirect('/news/');
+
+const news = mapNews(rawNews);
+const pageUrl = 'https://www.cocomarke.com/news/' + id + '/';
+const title = news.title + ' | お知らせ | COCOマーケ';
+const plainContent = (news.content ?? '').replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim();
+const description = plainContent.slice(0, 120) || 'COCOマーケからのお知らせです。';
+const breadcrumbSchema = JSON.stringify({
+  '@context': 'https://schema.org',
+  '@type': 'BreadcrumbList',
+  itemListElement: [
+    { '@type': 'ListItem', position: 1, name: 'ホーム', item: 'https://www.cocomarke.com/' },
+    { '@type': 'ListItem', position: 2, name: 'お知らせ', item: 'https://www.cocomarke.com/news/' },
+    { '@type': 'ListItem', position: 3, name: news.title, item: pageUrl },
+  ],
+});
+
+function textFromCmsContent(content?: string) {
+  return (content ?? '')
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<\/p>/gi, '\n\n')
+    .replace(/<[^>]*>/g, '')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .trim();
+}
+
+function linkifyText(text: string) {
+  const urlPattern = /(https?:\/\/[^\s]+)/g;
+  let result = '';
+  let lastIndex = 0;
+  for (const match of text.matchAll(urlPattern)) {
+    const rawUrl = match[0];
+    const index = match.index ?? 0;
+    const trailing = rawUrl.match(/[。、),）\]]+$/)?.[0] ?? '';
+    const url = trailing ? rawUrl.slice(0, -trailing.length) : rawUrl;
+
+    result += escapeHtml(text.slice(lastIndex, index));
+    result += '<a href="' + escapeHtml(url) + '" target="_blank" rel="noopener noreferrer">' + escapeHtml(url) + '</a>';
+    result += escapeHtml(trailing);
+    lastIndex = index + rawUrl.length;
+  }
+  return result + escapeHtml(text.slice(lastIndex));
+}
+
+function paragraphsFromText(text: string) {
+  const sentences = text.match(/[^。]+。?/g)?.map(s => s.trim()).filter(Boolean) ?? [text];
+  const groups: string[] = [];
+  for (let i = 0; i < sentences.length; i += 2) {
+    groups.push(sentences.slice(i, i + 2).join(''));
+  }
+  return groups.map(p => '<p>' + linkifyText(p) + '</p>').join('');
+}
+
+function formatNewsContent(content?: string) {
+  const text = textFromCmsContent(content);
+  if (!text) return '<p>詳細はありません。</p>';
+
+  const normalized = text
+    .replace(/\r\n/g, '\n')
+    .replace(/\s*■\s*/g, '\n■ ')
+    .replace(/\n{3,}/g, '\n\n');
+
+  return normalized
+    .split(/\n+/)
+    .map(line => line.trim())
+    .filter(Boolean)
+    .map(line => {
+      if (line.startsWith('■ ')) {
+        const body = line.slice(2).trim();
+        const url = body.match(/https?:\/\/[^\s]+/)?.[0];
+        const label = url ? body.replace(url, '').trim() : body;
+        return '<p class="news-resource"><strong>' + escapeHtml(label || '関連リンク') + '</strong>' +
+          (url ? '<br><a href="' + escapeHtml(url) + '" target="_blank" rel="noopener noreferrer">' + escapeHtml(url) + '</a>' : '') +
+          '</p>';
+      }
+      return paragraphsFromText(line);
+    })
+    .join('');
+}
+
+const content = formatNewsContent(news.content);
+
+let html = shellHtml;
+
+const main = '<main class="flex-1">' +
+  '<div class="bg-white">' +
+  '<div class="news-detail-wrap">' +
+  '<nav class="news-breadcrumb mb-8"><ol class="flex items-center gap-2 text-xs text-[#333] leading-[1.4]">' +
+  '<li><a class="font-medium hover:opacity-70 transition-opacity" href="/">トップページ</a></li>' +
+  '<li class="news-breadcrumb-separator">/</li><li><a class="font-medium hover:opacity-70 transition-opacity" href="/news/">お知らせ</a></li>' +
+  '<li class="news-breadcrumb-separator news-breadcrumb-current">/</li><li class="news-breadcrumb-current">' + escapeHtml(news.title) + '</li>' +
+  '</ol></nav>' +
+  '<article>' +
+  '<time class="text-sm lg:text-base text-[#005bea] font-semibold leading-[1.7]">' + formatDate(news.day ?? news.publishedAt) + '</time>' +
+  '<h1 class="news-detail-title">' + escapeHtml(news.title) + '</h1>' +
+  '<div class="news-detail-line"></div>' +
+  '<div class="news-content mt-8 text-sm lg:text-base leading-[1.9] text-[#333]">' + content + '</div>' +
+  '<div class="mt-10">' +
+  '<a class="inline-flex items-center justify-center px-6 py-3 rounded-full bg-gradient-to-r from-[#00c6fb] to-[#0965f6] text-white text-sm font-semibold leading-[1.4] hover:opacity-90 transition-opacity" href="/news/">お知らせ一覧へ戻る</a>' +
+  '</div>' +
+  '</article>' +
+  '</div>' +
+  '</div>' +
+  '</main>';
+
+const newsCss = '<style>.news-detail-wrap{max-width:800px;margin:0 auto;padding:120px 48px 80px}.news-detail-title{font-size:17px!important;font-weight:700!important;line-height:1.6!important;color:#041840!important;margin:24px 0 24px!important}.news-detail-line{border-top:1px solid #d8e3f0;margin:0 0 32px}.news-breadcrumb ol{flex-wrap:wrap}.news-breadcrumb li{min-width:0}.news-content p{margin:0 0 1.35em}.news-content a{color:#005bea;text-decoration:underline;overflow-wrap:anywhere}.news-content .news-resource{background:#f5f9fe;border-left:4px solid #00a8f4;padding:14px 16px;margin:1.8em 0;border-radius:6px}.news-content .news-resource strong{display:inline-block;margin-bottom:4px;color:#041840}.news-content ul,.news-content ol{margin:0 0 1.4em 1.5em}.news-content li{margin:.35em 0}.news-content img{max-width:100%;height:auto;border-radius:10px}.news-content h2{font-size:17px;font-weight:700;color:#005bea;margin:2em 0 .8em}.news-content h3{font-size:1.1em;font-weight:700;color:#041840;margin:1.6em 0 .7em}@media(max-width:768px){.news-detail-wrap{padding:96px 20px 60px}.news-detail-title{font-size:15px!important;margin:20px 0 20px!important}.news-detail-line{margin-bottom:28px}.news-breadcrumb{margin-bottom:28px}.news-breadcrumb ol{gap:6px 8px;font-size:11px;line-height:1.6}.news-breadcrumb-current{display:none}.news-content{font-size:14px!important;line-height:1.9!important}.news-content .news-resource{padding:12px 14px;margin:1.5em 0}}</style>';
+
+html = html.replace(/<title>.*?<\/title>/, '<title>' + escapeHtml(title) + '</title>');
+html = html.replace(/<meta name="description" content="[^"]*">/, '<meta name="description" content="' + escapeHtml(description) + '">');
+html = html.replace(/<meta name="robots" content="noindex,nofollow">/i, '');
+html = html.replace(/<link rel="canonical"[^>]*>/i, '<link rel="canonical" href="' + pageUrl + '">');
+html = html.replace(/<meta property="og:url" content="[^"]*">/i, '<meta property="og:url" content="' + pageUrl + '">');
+html = html.replace(/<meta property="og:title" content="[^"]*">/i, '<meta property="og:title" content="' + escapeHtml(title) + '">');
+html = html.replace(/<meta property="og:description" content="[^"]*">/i, '<meta property="og:description" content="' + escapeHtml(description) + '">');
+html = html.replace(/<meta name="twitter:title" content="[^"]*">/i, '<meta name="twitter:title" content="' + escapeHtml(title) + '">');
+html = html.replace(/<meta name="twitter:description" content="[^"]*">/i, '<meta name="twitter:description" content="' + escapeHtml(description) + '">');
+html = html.replace(/<script type="application\/ld\+json">[\s\S]*?<\/script>/i, '<script type="application/ld+json">' + breadcrumbSchema + '</script>');
+html = html.replace('</head>', newsCss + '</head>');
+html = html.replace(/<main class="flex-1">[\s\S]*?<\/main>/, main);
+html = injectGtm(html);
+
+return new Response(html, { headers: { 'Content-Type': 'text/html; charset=utf-8' } });
+---

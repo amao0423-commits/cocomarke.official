@@ -150,6 +150,231 @@ async function fetchGa4(token, propertyId) {
   return result;
 }
 
+// ── GA4: 汎用 runReport ───────────────────────────────────────────────────
+
+async function ga4RunReport(token, propertyId, body) {
+  const res = await fetch(
+    `https://analyticsdata.googleapis.com/v1beta/properties/${propertyId}:runReport`,
+    {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    }
+  );
+  if (!res.ok) throw new Error(`GA4 ${res.status}: ${await res.text()}`);
+  const data = await res.json();
+  const dimIdx = Object.fromEntries((data.dimensionHeaders ?? []).map((h, i) => [h.name, i]));
+  const metIdx = Object.fromEntries((data.metricHeaders ?? []).map((h, i) => [h.name, i]));
+  return (data.rows ?? []).map(row => ({
+    dim: (name) => row.dimensionValues[dimIdx[name]]?.value ?? '',
+    met: (name) => parseFloat(row.metricValues[metIdx[name]]?.value ?? '0'),
+  }));
+}
+
+// ── 流入元・コンバージョン分析（GA4） ──────────────────────────────────────
+// CV = フォーム完了(/contact/thanks/) + LP CTAクリック(cocomake-guideへの外部クリック)
+
+const ACQ_DAYS = 7; // 流入分析は直近7日（広告の効きを見やすく）
+const CV_PATH = '/contact/thanks';
+const CTA_DOMAIN = 'cocomake-guide';
+
+async function fetchAcquisition(token, propertyId) {
+  const range = [{ startDate: `${ACQ_DAYS}daysAgo`, endDate: 'yesterday' }];
+
+  // A: 流入元別セッション
+  const traffic = await ga4RunReport(token, propertyId, {
+    dimensions: [{ name: 'sessionSourceMedium' }],
+    metrics: [{ name: 'sessions' }, { name: 'engagedSessions' }],
+    dateRanges: range,
+    orderBys: [{ metric: { metricName: 'sessions' }, desc: true }],
+    limit: 25,
+  });
+
+  // B: フォーム完了（/contact/thanks/ のPV）を流入元別に
+  const formCv = await ga4RunReport(token, propertyId, {
+    dimensions: [{ name: 'sessionSourceMedium' }],
+    metrics: [{ name: 'screenPageViews' }],
+    dateRanges: range,
+    dimensionFilter: { filter: { fieldName: 'pagePath', stringFilter: { matchType: 'CONTAINS', value: CV_PATH } } },
+    limit: 50,
+  });
+
+  // C: LP CTAクリック（cocomake-guideへの外部リンククリック）を流入元別に
+  let clickCv = [];
+  try {
+    clickCv = await ga4RunReport(token, propertyId, {
+      dimensions: [{ name: 'sessionSourceMedium' }],
+      metrics: [{ name: 'eventCount' }],
+      dateRanges: range,
+      dimensionFilter: {
+        andGroup: { expressions: [
+          { filter: { fieldName: 'eventName', stringFilter: { value: 'click' } } },
+          { filter: { fieldName: 'linkDomain', stringFilter: { matchType: 'CONTAINS', value: CTA_DOMAIN } } },
+        ] },
+      },
+      limit: 50,
+    });
+  } catch (e) { console.warn(`[GA4] CTAクリック取得スキップ: ${e.message.slice(0, 80)}`); }
+
+  // D: ランディングページ別セッション（どのコンテンツが入口か）
+  const landing = await ga4RunReport(token, propertyId, {
+    dimensions: [{ name: 'landingPage' }],
+    metrics: [{ name: 'sessions' }, { name: 'engagedSessions' }],
+    dateRanges: range,
+    orderBys: [{ metric: { metricName: 'sessions' }, desc: true }],
+    limit: 12,
+  });
+
+  // マージ: 流入元ごとに sessions / formCv / clickCv / CVR
+  const formMap = Object.fromEntries(formCv.map(r => [r.dim('sessionSourceMedium'), r.met('screenPageViews')]));
+  const clickMap = Object.fromEntries(clickCv.map(r => [r.dim('sessionSourceMedium'), r.met('eventCount')]));
+
+  const sources = traffic.map(r => {
+    const sm = r.dim('sessionSourceMedium');
+    const sessions = r.met('sessions');
+    const engaged = r.met('engagedSessions');
+    const form = formMap[sm] ?? 0;
+    const click = clickMap[sm] ?? 0;
+    const cv = form + click;
+    return {
+      sourceMedium: sm,
+      sessions,
+      engageRate: sessions ? engaged / sessions : 0,
+      formCv: form,
+      clickCv: click,
+      cv,
+      cvr: sessions ? cv / sessions : 0,
+    };
+  });
+
+  const landingPages = landing.map(r => ({
+    path: r.dim('landingPage'),
+    sessions: r.met('sessions'),
+    engageRate: r.met('sessions') ? r.met('engagedSessions') / r.met('sessions') : 0,
+  }));
+
+  const totals = {
+    sessions: sources.reduce((s, x) => s + x.sessions, 0),
+    formCv: sources.reduce((s, x) => s + x.formCv, 0),
+    clickCv: sources.reduce((s, x) => s + x.clickCv, 0),
+  };
+  totals.cv = totals.formCv + totals.clickCv;
+  totals.cvr = totals.sessions ? totals.cv / totals.sessions : 0;
+
+  return { sources, landingPages, totals, days: ACQ_DAYS };
+}
+
+// ── Clarity: 行動分析（改善点の発見） ──────────────────────────────────────
+
+async function fetchClarity(projectId, token) {
+  // Clarity Data Export API は直近1〜3日のみ対応。tokenはプロジェクト単位。
+  const res = await fetch(
+    `https://www.clarity.ms/export/api/v1/project-live-insights?numOfDays=3&dimension1=URL`,
+    { headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(15_000) }
+  );
+  if (!res.ok) throw new Error(`Clarity ${res.status}: ${(await res.text()).slice(0, 120)}`);
+  const data = await res.json();
+  if (!Array.isArray(data)) throw new Error(`Clarity 予期しない応答: ${JSON.stringify(data).slice(0, 120)}`);
+
+  const num = (v) => parseFloat(String(v ?? '0').replace(/[^0-9.\-]/g, '')) || 0;
+  const norm = (s) => String(s || '').toLowerCase().replace(/[^a-z]/g, '');
+
+  // metricName を正規化してキーワードで照合（API差異に強くする）
+  const findMetric = (...keywords) => {
+    const kw = keywords.map(norm);
+    const m = data.find(x => kw.some(k => norm(x.metricName).includes(k)));
+    return m?.information ?? [];
+  };
+  // 行から「件数」っぽいフィールドを推定（subTotal優先、なければ最大の数値フィールド）
+  const rowCount = (row) => {
+    if (row.subTotal != null) return num(row.subTotal);
+    const candidates = Object.entries(row)
+      .filter(([k, v]) => !/url|name|percent|percentage|date/i.test(k) && !isNaN(num(v)))
+      .map(([, v]) => num(v));
+    return candidates.length ? Math.max(...candidates) : 0;
+  };
+  const rowUrl = (row) => row.Url ?? row.URL ?? row.url ?? '(全体)';
+
+  const summarize = (...keywords) => {
+    const rows = findMetric(...keywords);
+    const total = rows.reduce((s, x) => s + rowCount(x), 0);
+    const top = rows
+      .map(x => ({ url: rowUrl(x), count: rowCount(x) }))
+      .filter(x => x.count > 0)
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 3);
+    return { total, top };
+  };
+
+  const traffic = findMetric('traffic');
+  const totalSessions = traffic.reduce((s, x) => s + num(x.totalSessionCount ?? x.totalsessioncount ?? x.sessionsCount), 0);
+
+  return {
+    totalSessions,
+    deadClicks: summarize('deadclick'),
+    rageClicks: summarize('rageclick'),
+    quickBacks: summarize('quickback'),
+    scriptErrors: summarize('scripterror', 'jserror'),
+    excessiveScroll: summarize('excessivescroll'),
+  };
+}
+
+// ── AI要約（GitHub Models・無料・GITHUB_TOKEN） ────────────────────────────
+
+async function generateAiSummary(payload, githubToken) {
+  if (!githubToken) return null;
+  try {
+    const res = await fetch('https://models.github.ai/inference/chat/completions', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${githubToken}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'openai/gpt-4o-mini',
+        temperature: 0.3,
+        max_tokens: 600,
+        messages: [
+          {
+            role: 'system',
+            content:
+              'あなたはBtoBのWebマーケティングアナリストです。Instagram運用代行サービスのサイト分析データを受け取り、日本語で簡潔に示唆を出します。' +
+              '出力は次の3見出しのみ。各2〜3行、箇条書き可、Slack向けに短く。' +
+              '【効果的だった流入・コンテンツ】【改善すべき点】【今日の打ち手（最大3つ）】。' +
+              '数値は与えられたデータの範囲だけで述べ、推測で数字を作らない。',
+          },
+          { role: 'user', content: '以下が直近の分析データ(JSON)です。\n' + JSON.stringify(payload) },
+        ],
+      }),
+      signal: AbortSignal.timeout(30_000),
+    });
+    if (!res.ok) { console.warn(`[GitHub Models] ${res.status}: ${(await res.text()).slice(0, 120)}`); return null; }
+    const d = await res.json();
+    return d.choices?.[0]?.message?.content?.trim() ?? null;
+  } catch (e) {
+    console.warn(`[GitHub Models] スキップ: ${e.message.slice(0, 80)}`);
+    return null;
+  }
+}
+
+// ── ルールベース要約（AI不可時のフォールバック） ──────────────────────────
+
+function ruleSummary(acq) {
+  if (!acq || !acq.sources.length) return '_流入データが取得できませんでした。_';
+  const withCv = acq.sources.filter(s => s.cv > 0).sort((a, b) => b.cv - a.cv);
+  const topTraffic = acq.sources[0];
+  const lines = [];
+  if (withCv.length) {
+    const best = withCv[0];
+    lines.push(`• CVが最も多い流入元: *${best.sourceMedium}*（CV ${best.cv}・CVR ${(best.cvr * 100).toFixed(1)}%）`);
+  }
+  if (topTraffic) {
+    lines.push(`• 最も流入が多い: *${topTraffic.sourceMedium}*（${topTraffic.sessions}セッション・CVR ${(topTraffic.cvr * 100).toFixed(1)}%）`);
+  }
+  const wasteful = acq.sources.filter(s => s.sessions >= 30 && s.cv === 0);
+  if (wasteful.length) {
+    lines.push(`• 流入はあるがCV 0の要改善: ${wasteful.slice(0, 3).map(s => s.sourceMedium).join(', ')}`);
+  }
+  return lines.join('\n') || '_特筆すべき傾向はありません。_';
+}
+
 // ── 技術SEO チェック ──────────────────────────────────────────────────────
 
 async function checkTechnicalSeo() {
@@ -293,24 +518,97 @@ function priorityBadge(pts) {
   return '🟢 低';
 }
 
-async function sendSlack(webhookUrl, { ranked, fixedPages, techSeo, dataAvail, today }) {
+// ── 流入元・CV分析の Slack ブロック ────────────────────────────────────────
+
+function pad(s, n) { s = String(s); return s.length >= n ? s.slice(0, n) : s + ' '.repeat(n - s.length); }
+
+function acquisitionBlocks(acq) {
+  if (!acq || !acq.sources.length) {
+    return [{ type: 'section', text: { type: 'mrkdwn', text: '*🎯 流入元・コンバージョン分析*\n_GA4データなし_' } }];
+  }
+  const t = acq.totals;
+  const top = acq.sources.slice(0, 8);
+  const header = pad('流入元(source/medium)', 26) + pad('Sess', 6) + pad('CV', 4) + 'CVR';
+  const rows = top.map(s =>
+    pad(s.sourceMedium, 26) + pad(s.sessions, 6) + pad(s.cv, 4) + (s.cvr * 100).toFixed(1) + '%'
+  ).join('\n');
+
+  const blocks = [
+    { type: 'section', text: { type: 'mrkdwn', text:
+      `*🎯 流入元・コンバージョン分析（直近${acq.days}日）*\n` +
+      `合計 *${t.sessions.toLocaleString()}* セッション / CV *${t.cv}* 件` +
+      `（フォーム ${t.formCv} ・ LP CTA ${t.clickCv}） / CVR *${(t.cvr * 100).toFixed(1)}%*`,
+    } },
+    { type: 'section', text: { type: 'mrkdwn', text: '```' + header + '\n' + rows + '```' } },
+  ];
+
+  // CVがある流入元のうち効率の良い順 TOP3
+  const eff = acq.sources.filter(s => s.cv > 0 && s.sessions >= 5).sort((a, b) => b.cvr - a.cvr).slice(0, 3);
+  if (eff.length) {
+    blocks.push({ type: 'section', text: { type: 'mrkdwn', text:
+      '*✅ 効率の良い流入元（CVR順）*\n' +
+      eff.map(s => `• ${s.sourceMedium} — CVR ${(s.cvr * 100).toFixed(1)}%（CV ${s.cv} / ${s.sessions}セッション）`).join('\n'),
+    } });
+  }
+  // 入口コンテンツ TOP5
+  if (acq.landingPages.length) {
+    blocks.push({ type: 'section', text: { type: 'mrkdwn', text:
+      '*📄 流入の多い入口ページ*\n' +
+      acq.landingPages.slice(0, 5).map(p => `• \`${p.path}\` — ${p.sessions}セッション（接触率 ${(p.engageRate * 100).toFixed(0)}%）`).join('\n'),
+    } });
+  }
+  return blocks;
+}
+
+function clarityBlocks(clarity) {
+  if (!clarity) return [];
+  const fmt = (m, label) => {
+    if (!m || !m.total) return null;
+    const top = m.top[0];
+    return `• ${label}: *${m.total}*${top ? `（最多: \`${(top.url || '').replace('https://www.cocomarke.com', '')}\`）` : ''}`;
+  };
+  const lines = [
+    fmt(clarity.rageClicks, '怒りクリック（イライラ操作）'),
+    fmt(clarity.deadClicks, 'デッドクリック（反応しない箇所）'),
+    fmt(clarity.quickBacks, 'クイックバック（即離脱）'),
+    fmt(clarity.scriptErrors, 'JSエラー'),
+    fmt(clarity.excessiveScroll, '過剰スクロール（探し回り）'),
+  ].filter(Boolean);
+  if (!lines.length) return [];
+  return [
+    { type: 'divider' },
+    { type: 'section', text: { type: 'mrkdwn', text: `*🧭 行動分析（Clarity・直近3日 / ${clarity.totalSessions.toLocaleString()}セッション）*\n` + lines.join('\n') } },
+  ];
+}
+
+async function sendSlack(webhookUrl, { ranked, fixedPages, techSeo, dataAvail, today, acq, clarity, aiSummary }) {
   const availLabels = [
     dataAvail.gsc ? '✅ GSC' : '⬜ GSC',
     dataAvail.ga4 ? '✅ GA4' : '⬜ GA4',
-  ].join('  ');
+    dataAvail.clarity ? '✅ Clarity' : '⬜ Clarity',
+    dataAvail.ai ? '🤖 AI' : '',
+  ].filter(Boolean).join('  ');
 
   const blocks = [
     {
       type: 'header',
-      text: { type: 'plain_text', text: `📊 Daily SEO Report — ${today}`, emoji: true },
+      text: { type: 'plain_text', text: `📊 Daily Marketing Report — ${today}`, emoji: true },
     },
     {
       type: 'section',
-      text: { type: 'mrkdwn', text: `集計期間: 過去${REPORT_DAYS}日間  ${availLabels}` },
+      text: { type: 'mrkdwn', text: `${availLabels}` },
     },
     { type: 'divider' },
-    // ── 記事ページ ──
-    { type: 'section', text: { type: 'mrkdwn', text: `*📝 記事ページ TOP${ranked.length}*` } },
+    // ── 流入元・コンバージョン分析（最優先） ──
+    ...acquisitionBlocks(acq),
+    // ── 行動分析（Clarity） ──
+    ...clarityBlocks(clarity),
+    // ── AI要約 ──
+    { type: 'divider' },
+    { type: 'section', text: { type: 'mrkdwn', text: `*🤖 今日の示唆*\n${aiSummary || ruleSummary(acq)}` } },
+    { type: 'divider' },
+    // ── 記事ページ（SEO） ──
+    { type: 'section', text: { type: 'mrkdwn', text: `*📝 記事ページ TOP${ranked.length}（SEO・過去${REPORT_DAYS}日）*` } },
   ];
 
   for (let i = 0; i < ranked.length; i++) {
@@ -403,6 +701,9 @@ async function main() {
     GOOGLE_OAUTH_REFRESH_TOKEN,
     GSC_SITE_URL,
     GA4_PROPERTY_ID,
+    CLARITY_PROJECT_ID,
+    CLARITY_API_TOKEN,
+    GITHUB_TOKEN,
     SLACK_WEBHOOK_URL,
     MICROCMS_API_KEY,
   } = process.env;
@@ -418,6 +719,7 @@ async function main() {
   // ── Google APIs ──
   let gscAll = {};
   let ga4All = {};
+  let acq = null;
 
   if (GOOGLE_OAUTH_CLIENT_ID && GOOGLE_OAUTH_CLIENT_SECRET && GOOGLE_OAUTH_REFRESH_TOKEN && GSC_SITE_URL) {
     try {
@@ -429,13 +731,48 @@ async function main() {
       console.log(`  → ${Object.keys(gscAll).length} URL`);
 
       if (GA4_PROPERTY_ID) {
-        console.log('[GA4] データ取得中...');
+        console.log('[GA4] ページ別データ取得中...');
         ga4All = await fetchGa4(token, GA4_PROPERTY_ID);
         console.log(`  → ${Object.keys(ga4All).length} ページ`);
+
+        console.log('[GA4] 流入元・CV分析取得中...');
+        try {
+          acq = await fetchAcquisition(token, GA4_PROPERTY_ID);
+          console.log(`  → ${acq.sources.length} 流入元 / CV ${acq.totals.cv}件`);
+        } catch (e) { console.warn(`[GA4] 流入分析スキップ: ${e.message.slice(0, 100)}`); }
       }
     } catch (err) {
       console.warn(`[Google] スキップ: ${err.message}`);
     }
+  }
+
+  // ── Clarity 行動分析 ──
+  let clarity = null;
+  if (CLARITY_PROJECT_ID && CLARITY_API_TOKEN) {
+    try {
+      console.log('[Clarity] 行動データ取得中...');
+      clarity = await fetchClarity(CLARITY_PROJECT_ID, CLARITY_API_TOKEN);
+      console.log(`  → ${clarity.totalSessions} セッション`);
+    } catch (e) { console.warn(`[Clarity] スキップ: ${e.message.slice(0, 100)}`); }
+  }
+
+  // ── AI要約（GitHub Models・無料） ──
+  let aiSummary = null;
+  if (GITHUB_TOKEN && acq) {
+    console.log('[GitHub Models] AI要約生成中...');
+    aiSummary = await generateAiSummary({
+      期間: `直近${acq.days}日`,
+      流入元別: acq.sources.slice(0, 10).map(s => ({
+        流入元: s.sourceMedium, セッション: s.sessions, CV: s.cv,
+        フォームCV: s.formCv, LPクリックCV: s.clickCv, CVR: +(s.cvr * 100).toFixed(1),
+      })),
+      入口ページ: acq.landingPages.slice(0, 6).map(p => ({ path: p.path, sessions: p.sessions })),
+      Clarity: clarity ? {
+        怒りクリック: clarity.rageClicks.total, デッドクリック: clarity.deadClicks.total,
+        クイックバック: clarity.quickBacks.total, JSエラー: clarity.scriptErrors.total,
+      } : null,
+    }, GITHUB_TOKEN);
+    console.log(aiSummary ? '  → 生成成功' : '  → 失敗（ルールベースにフォールバック）');
   }
 
   // ── 技術SEO チェック ──
@@ -477,7 +814,15 @@ async function main() {
   const report = {
     generatedAt:      new Date().toISOString(),
     period:           { days: REPORT_DAYS, from: isoDate(REPORT_DAYS), to: isoDate(2) },
-    dataAvailability: { gsc: Object.keys(gscAll).length > 0, ga4: Object.keys(ga4All).length > 0 },
+    dataAvailability: {
+      gsc: Object.keys(gscAll).length > 0,
+      ga4: Object.keys(ga4All).length > 0,
+      clarity: !!clarity,
+      ai: !!aiSummary,
+    },
+    acquisition: acq,
+    clarity,
+    aiSummary,
     ranked,
     fixedPages,
     techSeo,
@@ -497,6 +842,9 @@ async function main() {
     techSeo,
     dataAvail: report.dataAvailability,
     today,
+    acq,
+    clarity,
+    aiSummary,
   });
   console.log('[Slack] 送信完了');
 }

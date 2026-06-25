@@ -215,18 +215,49 @@ const tocJs = `<script>
   }
   if (!toc) return;
   toc.classList.add('toc-box');
-  // Fix heading IDs to match TOC links
+  // Map each TOC link to its heading. microCMS overrides heading ids with
+  // its own hashes, so the original #h-sN / named anchors don't resolve.
+  // Re-point each link to the live heading id using, in order of priority:
+  //   1. exact text match  2. prefix match  3. positional fallback.
+  // A moving pointer keeps links in document order, so descriptive TOCs
+  // (link text differs from the heading) still map correctly, while the
+  // わかること/目次 headings are excluded so the index never shifts.
+  var norm = function(s) { return (s || '').replace(/\s+/g, '').trim(); };
   var links = toc.querySelectorAll('a[href^="#"]');
-  var headings = Array.from(body.querySelectorAll('h2, h3, h4')).filter(function(h) {
-    return !toc.contains(h);
-  });
-  var hi = 0;
+  var cands = Array.from(body.querySelectorAll('h2, h3, h4')).filter(function(h) {
+    if (toc.contains(h)) return false;
+    var t = norm(h.textContent);
+    return t !== 'この記事でわかること' && t !== '目次';
+  }).map(function(h) { return { el: h, text: norm(h.textContent), used: false }; });
+  var ptr = 0;
   links.forEach(function(link) {
-    var anchor = link.getAttribute('href').slice(1);
-    if (!document.getElementById(anchor) && hi < headings.length) {
-      headings[hi].id = anchor;
+    var lt = norm(link.textContent);
+    var target = null, ti = -1;
+    // 1. exact text match (first unused)
+    for (var k = 0; k < cands.length; k++) {
+      if (!cands[k].used && cands[k].text === lt) { target = cands[k]; ti = k; break; }
     }
-    hi++;
+    // 2. prefix match (heading truncated/suffixed vs link), min length guard
+    if (!target && lt.length >= 6) {
+      for (var k2 = 0; k2 < cands.length; k2++) {
+        var ct = cands[k2].text;
+        if (!cands[k2].used && (ct.indexOf(lt) === 0 || lt.indexOf(ct) === 0)) {
+          target = cands[k2]; ti = k2; break;
+        }
+      }
+    }
+    // 3. positional: next unused H2 at/after the pointer
+    if (!target) {
+      for (var k3 = ptr; k3 < cands.length; k3++) {
+        if (!cands[k3].used && cands[k3].el.tagName === 'H2') { target = cands[k3]; ti = k3; break; }
+      }
+    }
+    if (target) {
+      target.used = true;
+      ptr = ti + 1;
+      if (!target.el.id) target.el.id = link.getAttribute('href').slice(1);
+      link.setAttribute('href', '#' + target.el.id);
+    }
   });
   // Color-code blockquotes by emoji prefix
   body.querySelectorAll('blockquote').forEach(function(bq) {

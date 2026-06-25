@@ -24,6 +24,16 @@ $RC=function(a,b){if(b=document.getElementById(b))(a=document.getElementById(a))
 <script>
 (function(){
   var PHP_URL = '/api/contact';
+  var LEAD_KEY = 'cocomarke_meta_lead_event';
+  // 送信時に event_id を発行し sessionStorage に保存。
+  // thanksページのブラウザPixelと /api/contact のCAPIが同じIDで重複排除される。
+  function issueLeadEventId(){
+    var now = Date.now();
+    var randomPart = (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : (String(now) + '-' + Math.random().toString(16).slice(2));
+    var stored = { event_id: 'lead-' + randomPart, created_at: now };
+    try{ sessionStorage.setItem(LEAD_KEY, JSON.stringify(stored)); }catch(e){}
+    return stored.event_id;
+  }
   function setupForm(){
     var form = document.querySelector('form');
     if(!form || form._cocoReady) return;
@@ -34,6 +44,7 @@ $RC=function(a,b){if(b=document.getElementById(b))(a=document.getElementById(a))
       var btn = form.querySelector('button[type="submit"]');
       if(btn) btn.disabled = true;
       var data = new FormData(form);
+      data.append('event_id', issueLeadEventId());
       fetch(PHP_URL, {method:'POST', body:data})
         .then(function(r){ return r.json(); })
         .then(function(j){

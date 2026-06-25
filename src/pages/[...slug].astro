@@ -25,6 +25,9 @@ html = html.replace(/<link rel="canonical"[^>]*>/i, '');
 html = html.replace('</head>', staticCanonical + '</head>');
 
 if (String(slug) === 'contact/thanks') {
+  // ブラウザPixelの Lead を発火。event_id はフォーム送信時に sessionStorage へ
+  // 保存されたものを再利用し、/api/contact が送るサーバーCAPI(Lead)と重複排除する。
+  // サーバー側CAPIは email/phone をハッシュ化して送るため、計測精度はそちらが担保する。
   const leadTrackingScript = `<script>
 (function(){
   var storageKey='cocomarke_meta_lead_event';
@@ -40,15 +43,6 @@ if (String(slug) === 'contact/thanks') {
     if(typeof fbq==='function'){
       fbq('track','Lead',{}, {eventID: stored.event_id});
     }
-    fetch('/api/meta-capi',{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({
-        event_id:stored.event_id,
-        event_source_url:window.location.href
-      }),
-      keepalive:true
-    }).catch(function(){});
   }
   if(document.readyState==='loading'){
     document.addEventListener('DOMContentLoaded',sendLead,{once:true});

@@ -20,6 +20,13 @@ const [faqs, newsItems, topBlogs] = await Promise.all([
 
 let html = indexHtml;
 
+// --- モバイル用カルーセル化マーカー（導入事例・お役立ち情報のみ）---
+// 導入事例グリッド（gap-8）に cm-mcarousel を付与
+html = html.replace(
+  'grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8',
+  'grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8 cm-mcarousel'
+);
+
 // --- お知らせ置き換え（6件/ページ・ドットナビ付き）---
 if (newsItems.length > 0) {
   const SPLIT = 'お知らせ</h2></div><div class="flex flex-col">';
@@ -120,7 +127,8 @@ if (topBlogs.length > 0) {
           '</div></div></a>'
         );
       }).join('');
-      html = html.slice(0, bsi) + BLOG_SPLIT + newBlogCards + BLOG_AFTER + brest.slice(bai + BLOG_AFTER.length);
+      const BLOG_GRID = BLOG_SPLIT.replace('mb-10 lg:mb-16">', 'mb-10 lg:mb-16 cm-mcarousel">');
+      html = html.slice(0, bsi) + BLOG_GRID + newBlogCards + BLOG_AFTER + brest.slice(bai + BLOG_AFTER.length);
     }
   }
 }
@@ -131,8 +139,21 @@ const scriptClose = ['<', '/', 's', 'c', 'r', 'i', 'p', 't', '>'].join('');
 const accordionFn = "document.querySelectorAll('#faq button[aria-expanded]').forEach(function(b){b.addEventListener('click',function(){var p=this.nextElementSibling,o=this.getAttribute('aria-expanded')==='true';this.setAttribute('aria-expanded',String(!o));p.classList.toggle('hidden');var v=this.querySelector('.faq-v');if(v)v.style.display=o?'':'none';});});";
 const newsPaginationFn = "(function(){var pages=document.querySelectorAll('.news-page'),dots=document.querySelectorAll('.news-dot');if(!pages.length||!dots.length)return;function show(n){pages.forEach(function(p,i){p.style.display=i===n?'block':'none';});dots.forEach(function(d,i){d.style.background=i===n?'#005bea':'#ccc';});}dots.forEach(function(d){d.addEventListener('click',function(){show(parseInt(this.dataset.target));});});})();";
 const ctaSection = '<section class="relative"><div class="absolute inset-0"><img alt="" loading="lazy" decoding="async" class="object-cover" style="position:absolute;height:100%;width:100%;left:0;top:0;right:0;bottom:0;" src="/images/cta-background-02.jpg"><div class="absolute inset-0 bg-[rgba(56,56,56,0.75)] mix-blend-multiply"></div></div><div class="relative lg:max-w-[1200px] mx-auto px-4 lg:px-5 py-20"><h2 class="text-[26px] lg:text-[32px] font-semibold leading-[38px] lg:leading-[45px] text-white text-center">投稿制作から拡散まで、成果を生むInstagram運用</h2><p class="mt-6 text-base leading-[29px] lg:leading-[30px] tracking-[0.54px] text-white text-center">Instagram運用を「なんとなく」から「成果設計型」へ。まずはお気軽にご相談ください。</p><div class="flex flex-col lg:flex-row gap-6 mt-12"><div class="flex-1 bg-white rounded-[20px] py-5 lg:py-10 flex flex-col items-center gap-4 lg:gap-6"><h3 class="text-xl lg:text-[24px] font-semibold leading-[30px] lg:leading-[36px] bg-gradient-to-b from-[#0965f6] to-[#00c6fb] bg-clip-text text-transparent text-center">会社概要</h3><p class="text-base lg:text-lg leading-[29px] lg:leading-[30px] tracking-[0.54px] text-black text-center px-5">当社の事業内容や会社情報について<br>ご紹介しています。</p><a class="flex items-center justify-between w-[300px] lg:w-[350px] px-4 py-3 lg:px-6 lg:py-4 rounded-[40px] bg-gradient-to-r from-[#00c6fb] to-[#0965f6] text-white font-medium text-base leading-[1.6] tracking-[0.48px]" href="/about/"><span class="flex-1 text-center">企業情報を見る</span><span class="flex items-center justify-center w-6 h-6 lg:w-8 lg:h-8 rounded-full bg-white shrink-0"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-[#0062e0]"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg></span></a></div><div class="flex-1 bg-white rounded-[20px] py-5 lg:py-10 flex flex-col items-center gap-4 lg:gap-6"><h3 class="text-xl lg:text-[24px] font-semibold leading-[30px] lg:leading-[36px] bg-gradient-to-b from-[#0965f6] to-[#00c6fb] bg-clip-text text-transparent text-center">お問い合わせ</h3><p class="text-base lg:text-lg leading-[1.6] tracking-[0.54px] text-black text-center px-5">サービスに関するご相談やご質問など、<br>お気軽にお問い合わせください。</p><a class="flex items-center justify-between w-[300px] lg:w-[350px] px-4 py-3 lg:px-6 lg:py-4 rounded-[40px] bg-gradient-to-r from-[#00c6fb] to-[#0965f6] text-white font-medium text-base leading-[1.6] tracking-[0.48px]" href="/contact/"><span class="flex-1 text-center">お問い合わせ</span><span class="flex items-center justify-center w-6 h-6 lg:w-8 lg:h-8 rounded-full bg-white shrink-0"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-[#0062e0]"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg></span></a></div></div></div></section>';
+// --- モバイル: 導入事例・お役立ち情報を1カードずつ横スライドする自動カルーセル ---
+const carouselCss = '<style>'
+  + '.cm-clone{display:none;}'
+  + '@media(max-width:1023px){'
+  + '.cm-mcarousel{display:flex!important;flex-wrap:nowrap;overflow-x:auto;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;scrollbar-width:none;scroll-behavior:smooth;gap:14px;}'
+  + '.cm-mcarousel::-webkit-scrollbar{display:none;}'
+  + '.cm-mcarousel>*{flex:0 0 86%;scroll-snap-align:center;}'
+  + '.cm-mcarousel>.cm-clone{display:block;}'
+  + '}</style>';
+// 3枚目まで行ったら左に戻らず、右回転で自然に1枚目へ（先頭カードのクローンを末尾に1枚追加して継ぎ目なくループ）
+const carouselFn = "(function(){function isM(){return window.innerWidth<1024;}document.querySelectorAll('.cm-mcarousel').forEach(function(c){var n=c.children.length;if(n<2)return;var clone=c.children[0].cloneNode(true);clone.classList.add('cm-clone');clone.setAttribute('aria-hidden','true');clone.setAttribute('tabindex','-1');clone.style.pointerEvents='none';c.appendChild(clone);var i=0;function center(el,sm){if(!el)return;c.scrollTo({left:el.offsetLeft-(c.clientWidth-el.clientWidth)/2,behavior:sm?'smooth':'auto'});}function go(){if(!isM())return;i++;center(c.children[i],true);if(i>=n){setTimeout(function(){i=0;center(c.children[0],false);},650);}}setInterval(go,3000);});})();";
+
+html = html.replace('</head>', carouselCss + '</head>');
 html = html.replace('</main>', ctaSection + '</main>');
-html = html.replace('</body>', scriptOpen + accordionFn + newsPaginationFn + scriptClose + '</body>');
+html = html.replace('</body>', scriptOpen + accordionFn + newsPaginationFn + carouselFn + scriptClose + '</body>');
 html = injectGtm(html);
 
 return new Response(html, { headers: { 'Content-Type': 'text/html; charset=utf-8' } });

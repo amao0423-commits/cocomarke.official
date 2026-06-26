@@ -13,11 +13,14 @@ const STATIC_PAGES = [
 ];
 
 export const GET: APIRoute = async () => {
+  const today = new Date().toISOString().slice(0, 10);
   let blogEntries: { url: string; lastmod: string; priority: string; changefreq: string }[] = [];
   let newsEntries: { url: string; lastmod: string; priority: string; changefreq: string }[] = [];
 
+  let categoryEntries: { url: string; lastmod: string; priority: string; changefreq: string }[] = [];
+
   try {
-    const res = await client.getList<any>({ endpoint: 'blogs', queries: { limit: 100, orders: '-publishedAt' } });
+    const res = await client.getList<any>({ endpoint: 'blogs', queries: { limit: 100, orders: '-publishedAt', fields: 'id,day,publishedAt,updatedAt,category' } });
     blogEntries = res.contents.map((raw: any) => {
       const blog = mapBlog(raw);
       return {
@@ -27,6 +30,18 @@ export const GET: APIRoute = async () => {
         changefreq: 'monthly',
       };
     });
+    // カテゴリーページ（SEO流入源としてインデックス）
+    const cats = new Set<string>();
+    for (const raw of res.contents) {
+      const c = typeof raw.category === 'string' ? raw.category : raw.category?.name;
+      if (c) cats.add(c);
+    }
+    categoryEntries = [...cats].map(c => ({
+      url: `/blog/category/${encodeURIComponent(c)}/`,
+      lastmod: today,
+      priority: '0.6',
+      changefreq: 'weekly',
+    }));
   } catch {
     // microCMS unavailable — static pages only
   }
@@ -46,13 +61,18 @@ export const GET: APIRoute = async () => {
     // microCMS unavailable — static pages only
   }
 
-  const today = new Date().toISOString().slice(0, 10);
-
   const urls = [
     ...STATIC_PAGES.map(p => `
   <url>
     <loc>${BASE}${p.url}</loc>
     <lastmod>${today}</lastmod>
+    <changefreq>${p.changefreq}</changefreq>
+    <priority>${p.priority}</priority>
+  </url>`),
+    ...categoryEntries.map(p => `
+  <url>
+    <loc>${BASE}${p.url}</loc>
+    <lastmod>${p.lastmod}</lastmod>
     <changefreq>${p.changefreq}</changefreq>
     <priority>${p.priority}</priority>
   </url>`),

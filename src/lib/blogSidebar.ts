@@ -115,6 +115,15 @@ export function articleSidebar(latest: LatestItem[]): string {
   '</aside>';
 }
 
+// モバイル専用：記事末（著者ボックスの下）にサブスク＋サービス概要バナーを並べる
+// （右サイドバーはモバイル非表示のため、モバイルではここで表示）
+export function mobileArticleBanners(): string {
+  return '<div class="cm-mobile-banners">' +
+    bannerLink(SUBSCRIPTION_URL, BANNER_SUBSCRIPTION, 'インスタ運用をサブスクで｜COCOマーケ') +
+    bannerLink(DOC_URL, BANNER_DOC, 'COCOマーケ サービス概要 資料ダウンロード') +
+  '</div>';
+}
+
 // ── スタイル（<style> 込み） ───────────────────────────────────────────────
 export const SIDEBAR_STYLE = `<style>
 .cm-sidebar{width:280px;display:flex;flex-direction:column;gap:16px;font-family:"Helvetica Neue",Arial,"Hiragino Kaku Gothic ProN","Noto Sans JP",sans-serif;}
@@ -139,6 +148,9 @@ export const SIDEBAR_STYLE = `<style>
 .cm-side-banner img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;}
 /* 記事ページ：右サイドバーを追従(sticky)させる（固定ヘッダー80px分のオフセット） */
 .cm-article-aside{position:sticky;top:100px;align-self:flex-start;width:280px;flex-shrink:0;flex-direction:column;gap:14px;padding-top:8px;}
+/* モバイル専用：著者ボックス下のバナー（PCは非表示＝サイドバーで表示） */
+.cm-mobile-banners{display:none;}
+@media(max-width:1023px){.cm-mobile-banners{display:flex;flex-direction:column;gap:16px;width:100%;max-width:400px;margin:0 auto;}.cm-mobile-banners .cm-side-banner{width:100%;}}
 /* 最新記事リスト */
 .cm-latest__title{font-size:14px;font-weight:800;color:#11243a;margin:0 0 12px;}
 .cm-latest a{display:flex;gap:10px;text-decoration:none;margin-bottom:12px;align-items:flex-start;}

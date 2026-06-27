@@ -3,7 +3,7 @@ import sampleHtml from '../../../templates/blog/sample/index.html?raw';
 import { client, formatDate, escapeHtml, cached, mapBlog, type Blog } from '../../lib/microcms';
 import { SEO_OVERRIDES } from '../../lib/blogSeoOverrides';
 import { injectGtm } from '../../lib/gtm';
-import { articleSidebar, SIDEBAR_STYLE, type LatestItem } from '../../lib/blogSidebar';
+import { articleSidebar, mobileArticleBanners, SIDEBAR_STYLE, type LatestItem } from '../../lib/blogSidebar';
 import { getIsland, articleEndCta, injectMiniCta, ARTICLE_CTA_CSS, ISLAND_RELATED, subTags, subTagLabels, authorBox } from '../../lib/articleCta';
 import { catName } from '../../lib/blogList';
 
@@ -350,6 +350,7 @@ if (bodyHtml) {
       overrideFaqHtml +
       (island ? articleEndCta(island, id ?? '') : '') +
       authorBox() +
+      mobileArticleBanners() +
       BODY_END + html.slice(ei + BODY_END.length);
   }
 }

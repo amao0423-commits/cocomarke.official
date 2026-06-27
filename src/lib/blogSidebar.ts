@@ -5,11 +5,15 @@
  * - Tailwind非依存（cm-* 独自CSS）。PCはsticky、≤900pxは縦積み。
  */
 
-// 記事ページの右バーと同一のバナー（画像を統一）＋ 流入分析用UTM
+// 記事ページの右バナー（画像＋流入分析用UTM）
 const DIAGNOSIS_URL = 'https://www.cocomake-guide.com/analysis?utm_source=cocomarke&utm_medium=blog_sidebar&utm_campaign=blog&utm_content=banner_diagnosis';
-const DOC_URL = 'https://www.cocomake-guide.com/servicedocument?utm_source=cocomarke&utm_medium=blog_sidebar&utm_campaign=blog&utm_content=banner_document';
+// サブスク訴求バナー（記事ページに追加）
+const SUBSCRIPTION_URL = 'https://www.cocomake-guide.com/subscription?utm_source=blog&utm_medium=sidebar&utm_campaign=instagram_engagement_article';
+// サービス概要（資料）バナー：リンクを document_banner に変更
+const DOC_URL = 'https://www.cocomake-guide.com/servicedocument?utm_source=blog&utm_medium=sidebar&utm_campaign=document_banner';
 const BANNER_DIAGNOSIS = '/images/blog_detail-banner-01.png';
-const BANNER_DOC = '/images/blog_detail-banner-02.png';
+const BANNER_SUBSCRIPTION = '/images/blog_detail-banner-subscription.png';
+const BANNER_DOC = '/images/blog_detail-banner-02.png'; // ※サービス概要は3枚目に差し替え（同ファイルを上書き）
 
 const POPULAR_TAGS = ['凍結', 'リール', 'ハッシュタグ', 'DM', 'コラボ'];
 
@@ -104,6 +108,7 @@ function bannerLink(href: string, img: string, alt: string): string {
 export function articleSidebar(latest: LatestItem[]): string {
   return '<aside class="cm-article-aside hidden lg:flex">' +
     bannerLink(DIAGNOSIS_URL, BANNER_DIAGNOSIS, '1分で無料診断｜アカウント分析') +
+    bannerLink(SUBSCRIPTION_URL, BANNER_SUBSCRIPTION, 'インスタ運用をサブスクで｜COCOマーケ') +
     latestArticlesBox(latest) +
     searchBox() +
     bannerLink(DOC_URL, BANNER_DOC, 'COCOマーケ サービス概要 資料ダウンロード') +

@@ -108,14 +108,24 @@ if(mBtn&&mDrop){
   document.addEventListener('click',function(){mDrop.classList.add('hidden');});
 }
 })();`;
-html = html.replace('</body>', `<script>${filterJs}</script><script>${LIST_FILTER_JS}</script></body>`);
+// モバイルは記事10件まで表示し、11件目以降は「もっと見る」で表示
+const moreMobileCss = '<style>'
+  + '@media(max-width:1023px){.cm-hidden-mobile{display:none!important;}}'
+  + '.cm-more-wrap{display:none;justify-content:center;margin-top:28px;}'
+  + '@media(max-width:1023px){.cm-more-wrap{display:flex;}}'
+  + '.cm-more-btn{background:#005bea;color:#fff;font-weight:700;padding:13px 40px;border-radius:9999px;font-size:14px;border:none;cursor:pointer;}'
+  + '.cm-more-btn:hover{opacity:.9;}'
+  + '</style>';
+const moreMobileJs = "(function(){var grid=document.querySelector('.cm-blog-main .grid');if(!grid)return;var cards=grid.querySelectorAll('.blog-card');if(cards.length<=10)return;for(var i=10;i<cards.length;i++)cards[i].classList.add('cm-hidden-mobile');var w=document.createElement('div');w.className='cm-more-wrap';var b=document.createElement('button');b.type='button';b.className='cm-more-btn';b.textContent='もっと見る';b.addEventListener('click',function(){grid.querySelectorAll('.cm-hidden-mobile').forEach(function(c){c.classList.remove('cm-hidden-mobile');});w.style.display='none';});w.appendChild(b);grid.parentNode.insertBefore(w,grid.nextSibling);})();";
+
+html = html.replace('</body>', `<script>${filterJs}</script><script>${LIST_FILTER_JS}</script><script>${moreMobileJs}</script></body>`);
 
 const blogIndexUrl = 'https://www.cocomarke.com/blog/';
 const blogCanonical = `<link rel="canonical" href="${blogIndexUrl}"><meta property="og:url" content="${blogIndexUrl}">`;
 html = html.replace(/<link rel="canonical"[^>]*>/i, '');
 // 検索/絞り込み結果は重複回避のため noindex（カテゴリーは専用ページ /blog/category/ をインデックス）
 const robots = searchMode ? '<meta name="robots" content="noindex,follow">' : '';
-html = html.replace('</head>', blogCanonical + robots + SIDEBAR_STYLE + EMPTY_STATE_CSS + '</head>');
+html = html.replace('</head>', blogCanonical + robots + SIDEBAR_STYLE + EMPTY_STATE_CSS + moreMobileCss + '</head>');
 html = injectGtm(html);
 
 return new Response(html, { headers: { 'Content-Type': 'text/html; charset=utf-8' } });

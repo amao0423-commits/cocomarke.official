@@ -108,10 +108,10 @@ function bannerLink(href: string, img: string, alt: string): string {
 export function articleSidebar(latest: LatestItem[]): string {
   return '<aside class="cm-article-aside hidden lg:flex">' +
     bannerLink(DIAGNOSIS_URL, BANNER_DIAGNOSIS, '1分で無料診断｜アカウント分析') +
-    bannerLink(SUBSCRIPTION_URL, BANNER_SUBSCRIPTION, 'インスタ運用をサブスクで｜COCOマーケ') +
+    bannerLink(DOC_URL, BANNER_DOC, 'COCOマーケ サービス概要 資料ダウンロード') +  // サービス概要は最新記事の上
     latestArticlesBox(latest) +
     searchBox() +
-    bannerLink(DOC_URL, BANNER_DOC, 'COCOマーケ サービス概要 資料ダウンロード') +
+    bannerLink(SUBSCRIPTION_URL, BANNER_SUBSCRIPTION, 'インスタ運用をサブスクで｜COCOマーケ') +  // サブスクは検索の下
   '</aside>';
 }
 

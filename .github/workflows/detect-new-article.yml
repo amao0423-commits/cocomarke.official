@@ -1,0 +1,31 @@
+name: Detect New Article (rewrite prompt)
+
+on:
+  schedule:
+    - cron: '32 0 * * *'   # 09:32 JST（朝9時投稿の約30分後・GHA遅延吸収のためやや後ろ）
+  workflow_dispatch:        # 手動実行・動作確認用
+
+# ── 必要な GitHub Secrets（日次SEOレポートと共通） ──────────────────────────
+# MICROCMS_API_KEY   microCMSコンテンツAPIキー
+# SLACK_WEBHOOK_URL  Slack Incoming Webhook URL
+# ───────────────────────────────────────────────────────────────────────────
+
+permissions:
+  contents: read
+
+jobs:
+  detect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Detect newly published article and notify Slack
+        env:
+          MICROCMS_API_KEY: ${{ secrets.MICROCMS_API_KEY }}
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        run: node scripts/detect-new-article.mjs

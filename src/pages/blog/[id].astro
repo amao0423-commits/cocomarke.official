@@ -218,6 +218,12 @@ html { scroll-behavior: smooth; }
 .cms-body table { border-collapse: collapse; width: 100%; margin: 1.5em 0; table-layout: auto; }
 .cms-body th { background: #DBEAFE; color: #1E40AF; font-weight: 700; text-align: center; padding: 10px 14px; border: 1px solid #93C5FD; white-space: nowrap; }
 .cms-body td { border: 1px solid #DBEAFE; padding: 9px 13px; text-align: center; vertical-align: middle; }
+.cms-body .cm-table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; margin: 1.5em 0; }
+.cms-body .cm-table-wrap > table { margin: 0; }
+@media (max-width: 640px) {
+  .cms-body .cm-table-wrap > table { min-width: 560px; }
+  .cms-body th, .cms-body td { padding: 8px 10px; font-size: 14px; }
+}
 .cms-body blockquote { border-left: 4px solid #93C5FD; background: #F0F9FF; margin: 1.5em 0; padding: 12px 16px; color: #374151; border-radius: 0 6px 6px 0; }
 </style>`;
 
@@ -333,6 +339,8 @@ const overrideFaqHtml = override?.faqs?.length
 const bodyHtml = blog.body ?? blog.content ?? '';
 if (bodyHtml) {
   let cleanedBody = cleanWixContent(bodyHtml);
+  // 表をモバイルで横スクロール可能に（microCMSがinline styleを除去するためフロント側でラップ）
+  cleanedBody = cleanedBody.replace(/<table/g, '<div class="cm-table-wrap"><table').replace(/<\/table>/g, '</table></div>');
   // 2つ目の本文段落末にミニCTA（離脱前接触）
   if (island) cleanedBody = injectMiniCta(cleanedBody, island, id ?? '');
   // override.faqs が指定されているときだけ本文FAQをストリップして差し替える

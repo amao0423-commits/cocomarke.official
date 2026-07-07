@@ -11,7 +11,11 @@ if (!rawNews) return Astro.redirect('/news/');
 const news = mapNews(rawNews);
 const pageUrl = 'https://www.cocomarke.com/news/' + id + '/';
 const title = news.title + ' | お知らせ | COCOマーケ';
-const plainContent = (news.content ?? '').replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim();
+const plainContent = (news.content ?? '')
+  .replace(/\[([^\]]+)\]\(https?:\/\/[^\s)]+\)/g, '$1')
+  .replace(/<[^>]*>/g, '')
+  .replace(/\s+/g, ' ')
+  .trim();
 const description = plainContent.slice(0, 120) || 'COCOマーケからのお知らせです。';
 const breadcrumbSchema = JSON.stringify({
   '@context': 'https://schema.org',
@@ -36,19 +40,27 @@ function textFromCmsContent(content?: string) {
 }
 
 function linkifyText(text: string) {
-  const urlPattern = /(https?:\/\/[^\s]+)/g;
+  // Markdown link [label](url) を優先、続いて裸のURLを自動リンク化
+  const linkPattern = /\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)|(https?:\/\/[^\s]+)/g;
   let result = '';
   let lastIndex = 0;
-  for (const match of text.matchAll(urlPattern)) {
-    const rawUrl = match[0];
+  for (const match of text.matchAll(linkPattern)) {
     const index = match.index ?? 0;
-    const trailing = rawUrl.match(/[。、),）\]]+$/)?.[0] ?? '';
-    const url = trailing ? rawUrl.slice(0, -trailing.length) : rawUrl;
-
     result += escapeHtml(text.slice(lastIndex, index));
-    result += '<a href="' + escapeHtml(url) + '" target="_blank" rel="noopener noreferrer">' + escapeHtml(url) + '</a>';
-    result += escapeHtml(trailing);
-    lastIndex = index + rawUrl.length;
+
+    if (match[1] && match[2]) {
+      const label = match[1];
+      const url = match[2];
+      result += '<a href="' + escapeHtml(url) + '" target="_blank" rel="noopener noreferrer">' + escapeHtml(label) + '</a>';
+      lastIndex = index + match[0].length;
+    } else {
+      const rawUrl = match[3];
+      const trailing = rawUrl.match(/[。、),）\]]+$/)?.[0] ?? '';
+      const url = trailing ? rawUrl.slice(0, -trailing.length) : rawUrl;
+      result += '<a href="' + escapeHtml(url) + '" target="_blank" rel="noopener noreferrer">' + escapeHtml(url) + '</a>';
+      result += escapeHtml(trailing);
+      lastIndex = index + rawUrl.length;
+    }
   }
   return result + escapeHtml(text.slice(lastIndex));
 }

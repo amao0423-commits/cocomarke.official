@@ -30,8 +30,8 @@ export const POST: APIRoute = async ({ request }) => {
 
   const { inquiryType = '', company = '', name = '', furigana = '', url = '', email = '', phone = '', referral = '', message = '', event_id = '' } = data;
 
-  // 必須チェック
-  if (!name || !furigana || !email || !phone || !message) {
+  // 必須チェック（電話・本文は任意）
+  if (!name || !furigana || !email) {
     return new Response(JSON.stringify({ success: false, error: 'required' }), { status: 400 });
   }
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {

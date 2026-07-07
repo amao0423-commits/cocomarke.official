@@ -37,11 +37,7 @@ if (newsItems.length > 0) {
     const faqIdx = rest.indexOf('<div id="faq"');
     const closing = rest.slice(0, faqIdx).slice(rest.slice(0, faqIdx).lastIndexOf('</div></section>'));
 
-    const PAGE_SIZE = 6;
-    const pages: News[][] = [];
-    for (let i = 0; i < newsItems.length; i += PAGE_SIZE) {
-      pages.push(newsItems.slice(i, i + PAGE_SIZE));
-    }
+    const latest3 = newsItems.slice(0, 3);
 
     const buildRows = (page: News[], pageIdx: number) =>
       page.map((item, i) =>
@@ -51,24 +47,10 @@ if (newsItems.length > 0) {
         '</a>'
       ).join('');
 
-    const pagesHtml = pages.map((page, pi) =>
-      '<div class="news-page" data-page="' + pi + '"' + (pi > 0 ? ' style="display:none"' : '') + '>' +
-      buildRows(page, pi) +
-      '</div>'
-    ).join('');
-
-    const dotsHtml = pages.length > 1
-      ? '<div class="flex justify-center gap-3 mt-6">' +
-        pages.map((_, i) =>
-          '<button class="news-dot w-2.5 h-2.5 rounded-full transition-colors duration-200 ' +
-          (i === 0 ? 'bg-[#005bea]' : 'bg-[#ccc]') +
-          '" data-target="' + i + '" aria-label="' + (i + 1) + 'ページ目"></button>'
-        ).join('') +
-        '</div>'
-      : '';
+    const rowsHtml = '<div class="news-page" data-page="0">' + buildRows(latest3, 0) + '</div>';
 
     const newsMoreLink = '<div class="flex justify-center mt-10"><a class="inline-flex items-center justify-center px-6 py-3 rounded-full bg-gradient-to-r from-[#00c6fb] to-[#0965f6] text-white text-sm font-semibold leading-[1.4] hover:opacity-90 transition-opacity" href="/news/">お知らせ一覧を見る</a></div>';
-    html = pre + pagesHtml + dotsHtml + newsMoreLink + closing + rest.slice(faqIdx);
+    html = pre + rowsHtml + newsMoreLink + closing + rest.slice(faqIdx);
   }
 }
 
@@ -140,20 +122,49 @@ const accordionFn = "document.querySelectorAll('#faq button[aria-expanded]').for
 const newsPaginationFn = "(function(){var pages=document.querySelectorAll('.news-page'),dots=document.querySelectorAll('.news-dot');if(!pages.length||!dots.length)return;function show(n){pages.forEach(function(p,i){p.style.display=i===n?'block':'none';});dots.forEach(function(d,i){d.style.background=i===n?'#005bea':'#ccc';});}dots.forEach(function(d){d.addEventListener('click',function(){show(parseInt(this.dataset.target));});});})();";
 const ctaSection = '<section class="relative"><div class="absolute inset-0"><img alt="" loading="lazy" decoding="async" class="object-cover" style="position:absolute;height:100%;width:100%;left:0;top:0;right:0;bottom:0;" src="/images/cta-background-02.jpg"><div class="absolute inset-0 bg-[rgba(56,56,56,0.75)] mix-blend-multiply"></div></div><div class="relative lg:max-w-[1200px] mx-auto px-4 lg:px-5 py-20"><h2 class="text-[26px] lg:text-[32px] font-semibold leading-[38px] lg:leading-[45px] text-white text-center">投稿制作から拡散まで、成果を生むInstagram運用</h2><p class="mt-6 text-base leading-[29px] lg:leading-[30px] tracking-[0.54px] text-white text-center">Instagram運用を「なんとなく」から「成果設計型」へ。まずはお気軽にご相談ください。</p><div class="flex flex-col lg:flex-row gap-6 mt-12"><div class="flex-1 bg-white rounded-[20px] py-5 lg:py-10 flex flex-col items-center gap-4 lg:gap-6"><h3 class="text-xl lg:text-[24px] font-semibold leading-[30px] lg:leading-[36px] bg-gradient-to-b from-[#0965f6] to-[#00c6fb] bg-clip-text text-transparent text-center">会社概要</h3><p class="text-base lg:text-lg leading-[29px] lg:leading-[30px] tracking-[0.54px] text-black text-center px-5">当社の事業内容や会社情報について<br>ご紹介しています。</p><a class="flex items-center justify-between w-[300px] lg:w-[350px] px-4 py-3 lg:px-6 lg:py-4 rounded-[40px] bg-gradient-to-r from-[#00c6fb] to-[#0965f6] text-white font-medium text-base leading-[1.6] tracking-[0.48px]" href="/about/"><span class="flex-1 text-center">企業情報を見る</span><span class="flex items-center justify-center w-6 h-6 lg:w-8 lg:h-8 rounded-full bg-white shrink-0"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-[#0062e0]"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg></span></a></div><div class="flex-1 bg-white rounded-[20px] py-5 lg:py-10 flex flex-col items-center gap-4 lg:gap-6"><h3 class="text-xl lg:text-[24px] font-semibold leading-[30px] lg:leading-[36px] bg-gradient-to-b from-[#0965f6] to-[#00c6fb] bg-clip-text text-transparent text-center">お問い合わせ</h3><p class="text-base lg:text-lg leading-[1.6] tracking-[0.54px] text-black text-center px-5">サービスに関するご相談やご質問など、<br>お気軽にお問い合わせください。</p><a class="flex items-center justify-between w-[300px] lg:w-[350px] px-4 py-3 lg:px-6 lg:py-4 rounded-[40px] bg-gradient-to-r from-[#00c6fb] to-[#0965f6] text-white font-medium text-base leading-[1.6] tracking-[0.48px]" href="/contact/"><span class="flex-1 text-center">お問い合わせ</span><span class="flex items-center justify-center w-6 h-6 lg:w-8 lg:h-8 rounded-full bg-white shrink-0"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-[#0062e0]"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg></span></a></div></div></div></section>';
 // --- モバイル: 導入事例・お役立ち情報を1カードずつ横スライドする自動カルーセル ---
-const carouselCss = '<style>'
-  + '.cm-clone{display:none;}'
-  + '@media(max-width:1023px){'
+const carouselCss = '<style>@media(max-width:1023px){'
   + '.cm-mcarousel{display:flex!important;flex-wrap:nowrap;overflow-x:auto;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;scrollbar-width:none;scroll-behavior:smooth;gap:14px;}'
   + '.cm-mcarousel::-webkit-scrollbar{display:none;}'
   + '.cm-mcarousel>*{flex:0 0 86%;scroll-snap-align:center;}'
-  + '.cm-mcarousel>.cm-clone{display:block;}'
   + '}</style>';
-// 3枚目まで行ったら左に戻らず、右回転で自然に1枚目へ（先頭カードのクローンを末尾に1枚追加して継ぎ目なくループ）
-const carouselFn = "(function(){function isM(){return window.innerWidth<1024;}document.querySelectorAll('.cm-mcarousel').forEach(function(c){var n=c.children.length;if(n<2)return;var clone=c.children[0].cloneNode(true);clone.classList.add('cm-clone');clone.setAttribute('aria-hidden','true');clone.setAttribute('tabindex','-1');clone.style.pointerEvents='none';c.appendChild(clone);var i=0;function center(el,sm){if(!el)return;c.scrollTo({left:el.offsetLeft-(c.clientWidth-el.clientWidth)/2,behavior:sm?'smooth':'auto'});}function go(){if(!isM())return;i++;center(c.children[i],true);if(i>=n){setTimeout(function(){i=0;center(c.children[0],false);},650);}}setInterval(go,3000);});})();";
+const carouselFn = "(function(){function isM(){return window.innerWidth<1024;}document.querySelectorAll('.cm-mcarousel').forEach(function(c){var n=c.children.length;if(n<2)return;var i=0;function go(){if(!isM())return;i=(i+1)%n;var t=c.children[i];c.scrollTo({left:t.offsetLeft-(c.clientWidth-t.clientWidth)/2,behavior:'smooth'});}setInterval(go,3000);});})();";
+// --- トップページ内お問い合わせフォーム送信（/api/contact へPOST → thanksへ）---
+const contactFormFn = `(function(){
+  var PHP_URL='/api/contact';
+  var LEAD_KEY='cocomarke_meta_lead_event';
+  function issueLeadEventId(){
+    var now=Date.now();
+    var randomPart=(window.crypto&&crypto.randomUUID)?crypto.randomUUID():(String(now)+'-'+Math.random().toString(16).slice(2));
+    var stored={event_id:'lead-'+randomPart,created_at:now};
+    try{sessionStorage.setItem(LEAD_KEY,JSON.stringify(stored));}catch(e){}
+    return stored.event_id;
+  }
+  function setupForm(){
+    var form=document.querySelector('form');
+    if(!form||form._cocoReady)return;
+    form._cocoReady=true;
+    form.addEventListener('submit',function(e){
+      e.preventDefault();e.stopImmediatePropagation();
+      var btn=form.querySelector('button[type="submit"]');
+      if(btn)btn.disabled=true;
+      var data=new FormData(form);
+      data.append('event_id',issueLeadEventId());
+      fetch(PHP_URL,{method:'POST',body:data})
+        .then(function(r){return r.json();})
+        .then(function(j){
+          if(j.success){window.location.href='/contact/thanks/';}
+          else{alert('送信に失敗しました。時間をおいて再度お試しください。');if(btn)btn.disabled=false;}
+        })
+        .catch(function(){alert('送信に失敗しました。時間をおいて再度お試しください。');if(btn)btn.disabled=false;});
+    },true);
+  }
+  setupForm();
+  var _t=Date.now(),_id=setInterval(function(){setupForm();if(Date.now()-_t>8000)clearInterval(_id);},200);
+})();`;
 
 html = html.replace('</head>', carouselCss + '</head>');
 html = html.replace('</main>', ctaSection + '</main>');
-html = html.replace('</body>', scriptOpen + accordionFn + newsPaginationFn + carouselFn + scriptClose + '</body>');
+html = html.replace('</body>', scriptOpen + accordionFn + newsPaginationFn + carouselFn + contactFormFn + scriptClose + '</body>');
 html = injectGtm(html);
 
 return new Response(html, { headers: { 'Content-Type': 'text/html; charset=utf-8' } });

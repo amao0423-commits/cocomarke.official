@@ -73,6 +73,10 @@ let html = sampleHtml;
 const date = formatDate(blog.day ?? blog.publishedAt);
 const cat = typeof blog.category === 'string' ? blog.category : blog.category?.name ?? '';
 const eyecatchUrl = blog.eyecatch?.url;
+// microCMS(imgix)画像を表示用に最適化（WebP変換・幅制限・非拡大）。OG/schemaは生URLのまま使う。
+const mcImg = (u: string | undefined, w: number, q = 78): string | undefined =>
+  u ? `${u}${u.includes('?') ? '&' : '?'}fm=webp&w=${w}&q=${q}&fit=max` : u;
+const eyecatchImg = mcImg(eyecatchUrl, 960);
 
 html = html.replace(
   '<ol class="flex items-center gap-2 text-xs text-[#333] leading-[1.4]">',
@@ -87,14 +91,19 @@ html = html.replace(
   '<li class="whitespace-nowrap shrink-0"><a class="font-medium hover:opacity-70 transition-opacity" href="/blog/">お役立ち情報</a></li>'
 );
 html = html.replace('>第3階層ページ<', ' class="min-w-0 truncate">' + escapeHtml(blog.title) + '<');
-html = html.replace('</head>', '<style>nav ol>li.shrink-0+li{flex-shrink:0}</style></head>');
+html = html.replace(
+  '</head>',
+  '<link rel="preconnect" href="https://images.microcms-assets.io" crossorigin>' +
+  (eyecatchImg ? `<link rel="preload" as="image" href="${eyecatchImg}" fetchpriority="high">` : '') +
+  '<style>nav ol>li.shrink-0+li{flex-shrink:0}</style></head>'
+);
 html = html.replace('>0000.00.00<', '>' + date + '<');
 html = html.replace(/(<h1[^>]*>).*?(<\/h1>)/s, '$1' + escapeHtml(blog.title) + '$2' + subTags(blog.title, id ?? ''));
 if (cat) html = html.replaceAll('>ダミーカテゴリ<', '>' + escapeHtml(cat) + '<');
 
 // Replace ALL blog-01.jpg placeholder occurrences (src and srcset) with eyecatch
-if (eyecatchUrl) {
-  html = html.replaceAll('/images/blog-01.jpg', eyecatchUrl);
+if (eyecatchImg) {
+  html = html.replaceAll('/images/blog-01.jpg', eyecatchImg);
 }
 
 // --- Strip WIX-scraped metadata from body HTML ---
@@ -341,6 +350,8 @@ if (bodyHtml) {
   let cleanedBody = cleanWixContent(bodyHtml);
   // 表をモバイルで横スクロール可能に（microCMSがinline styleを除去するためフロント側でラップ）
   cleanedBody = cleanedBody.replace(/<table/g, '<div class="cm-table-wrap"><table').replace(/<\/table>/g, '</table></div>');
+  // 本文のmicroCMS画像をWebP化＋幅制限（表示は最大720px幅・retina考慮で880px、非拡大）
+  cleanedBody = cleanedBody.replace(/(<img[^>]+src=")(https:\/\/images\.microcms-assets\.io\/[^"?]+)"/g, '$1$2?fm=webp&w=880&q=78&fit=max"');
   // 2つ目の本文段落末にミニCTA（離脱前接触）
   if (island) cleanedBody = injectMiniCta(cleanedBody, island, id ?? '');
   // override.faqs が指定されているときだけ本文FAQをストリップして差し替える

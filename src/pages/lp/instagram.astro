@@ -1,0 +1,12 @@
+---
+import lpHtml from '../../../templates/lp/instagram/index.html?raw';
+import { injectGtm } from '../../lib/gtm';
+
+// Meta広告の着地用LP。ヘッダー/フッターは表示しない（CVに集中させる）。
+// injectGtm で Meta Pixel(base) + GTM を <head> に注入する。
+const html = injectGtm(lpHtml);
+
+return new Response(html, {
+  headers: { 'Content-Type': 'text/html; charset=utf-8' },
+});
+---

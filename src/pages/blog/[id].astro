@@ -2,20 +2,24 @@
 import sampleHtml from '../../../templates/blog/sample/index.html?raw';
 import { client, formatDate, escapeHtml, cached, mapBlog, fetchAllBlogs, type Blog } from '../../lib/microcms';
 import { SEO_OVERRIDES } from '../../lib/blogSeoOverrides';
+import { injectGtm } from '../../lib/gtm';
+import { articleSidebar, mobileArticleBanners, SIDEBAR_STYLE, type LatestItem } from '../../lib/blogSidebar';
+import { getIsland, articleEndCta, injectMiniCta, ARTICLE_CTA_CSS, ISLAND_RELATED, subTags, subTagLabels, authorBox } from '../../lib/articleCta';
+import { catName } from '../../lib/blogList';
 
 const { id } = Astro.params;
 
 if (id === 'sample') {
-  return new Response(sampleHtml, { headers: { 'Content-Type': 'text/html; charset=utf-8' } });
+  return new Response(injectGtm(sampleHtml), { headers: { 'Content-Type': 'text/html; charset=utf-8' } });
 }
 
 // 記事取得と関連記事取得を並列実行
 const [rawBlog, recentBlogs] = await Promise.all([
   client.get<any>({ endpoint: 'blogs', contentId: id as string }).catch(() => null),
-  cached<Blog[]>('blogs-related-20', async () => {
+  cached<Blog[]>('blogs-related-100', async () => {
     const res = await client.getList<any>({
       endpoint: 'blogs',
-      queries: { limit: 20, orders: '-publishedAt', fields: 'id,title,day,publishedAt,eyecatch,category' },
+      queries: { limit: 100, orders: '-publishedAt', fields: 'id,title,day,publishedAt,eyecatch,category' },
     });
     return res.contents.map(mapBlog);
   }).catch(() => [] as Blog[]),
@@ -24,22 +28,46 @@ const [rawBlog, recentBlogs] = await Promise.all([
 if (!rawBlog) return Astro.redirect('/blog/');
 const blog = mapBlog(rawBlog);
 
-// 同カテゴリを優先、残りを新着で補完（最大5件）
+// 右サイドバー「最新記事」用：新着3件（現記事は除外）
+const latestItems: LatestItem[] = recentBlogs
+  .filter(b => b.id !== id)
+  .slice(0, 3)
+  .map(b => ({
+    id: b.id,
+    title: b.title,
+    category: catName(b),
+    img: b.eyecatch?.url ?? '/images/blog-01.jpg',
+  }));
+
+// この記事が属する島（タスク①のslug→islandマップを流用）
+const island = getIsland(id);
+
+// おすすめ記事：記事内容に合わせた関連度でスコアリング（最大5件・現記事は除外）
+//   サブタグ（テーマ）の一致を主軸に、同じ島・同カテゴリーを加点。足りなければ新着で補完。
 const curCat = typeof blog.category === 'string' ? blog.category : blog.category?.name ?? '';
-const sameCatBlogs = recentBlogs.filter(b => {
-  if (b.id === id) return false;
-  const bCat = typeof b.category === 'string' ? b.category : b.category?.name ?? '';
-  return curCat && bCat === curCat;
-});
-const otherBlogs = recentBlogs.filter(b => {
-  if (b.id === id) return false;
-  const bCat = typeof b.category === 'string' ? b.category : b.category?.name ?? '';
-  return !curCat || bCat !== curCat;
-});
-const relatedBlogs = [...sameCatBlogs, ...otherBlogs].slice(0, 5);
+const catOf = (b: Blog) => (typeof b.category === 'string' ? b.category : b.category?.name ?? '');
+const curTags = subTagLabels(blog.title, id ?? '');
+const islandSet = island ? new Set(ISLAND_RELATED[island]) : null;
+
+const scored = recentBlogs
+  .filter(b => b.id !== id)
+  .map(b => {
+    const overlap = subTagLabels(b.title, b.id).filter(t => curTags.includes(t)).length;
+    let score = overlap * 3;
+    if (islandSet?.has(b.id)) score += 4;       // 同じ島の代表記事を優遇
+    if (curCat && catOf(b) === curCat) score += 1; // 同カテゴリーを微加点
+    return { b, score };
+  })
+  .sort((a, b) => b.score - a.score); // 同点は新着順（recentBlogsが-publishedAt）
+
+const relatedBlogs = [
+  ...scored.filter(s => s.score > 0).map(s => s.b),
+  ...scored.filter(s => s.score === 0).map(s => s.b), // 関連が薄い場合は新着で補完
+].slice(0, 5);
 
 // SEO overrides for specific articles
 const override = SEO_OVERRIDES[id ?? ''];
+
 // Validate curated related-links against ALL blog IDs (not just the recent 20),
 // so links to older articles aren't silently dropped. Fail-open on fetch error.
 const allBlogIds = override?.relatedLinks?.length
@@ -59,42 +87,62 @@ let html = sampleHtml;
 const date = formatDate(blog.day ?? blog.publishedAt);
 const cat = typeof blog.category === 'string' ? blog.category : blog.category?.name ?? '';
 const eyecatchUrl = blog.eyecatch?.url;
+// microCMS(imgix)画像を表示用に最適化（WebP変換・幅制限・非拡大）。OG/schemaは生URLのまま使う。
+const mcImg = (u: string | undefined, w: number, q = 78): string | undefined =>
+  u ? `${u}${u.includes('?') ? '&' : '?'}fm=webp&w=${w}&q=${q}&fit=max` : u;
+const eyecatchImg = mcImg(eyecatchUrl, 960);
 
-html = html.replace('>第3階層ページ<', '>' + escapeHtml(blog.title) + '<');
+html = html.replace(
+  '<ol class="flex items-center gap-2 text-xs text-[#333] leading-[1.4]">',
+  '<ol class="flex items-center gap-2 text-xs text-[#333] leading-[1.4] overflow-hidden">'
+);
+html = html.replace(
+  '<li><a class="font-medium hover:opacity-70 transition-opacity" href="/">トップページ</a></li>',
+  '<li class="whitespace-nowrap shrink-0"><a class="font-medium hover:opacity-70 transition-opacity" href="/">トップページ</a></li>'
+);
+html = html.replace(
+  '<li><a class="font-medium hover:opacity-70 transition-opacity" href="/blog/">お役立ち情報</a></li>',
+  '<li class="whitespace-nowrap shrink-0"><a class="font-medium hover:opacity-70 transition-opacity" href="/blog/">お役立ち情報</a></li>'
+);
+html = html.replace('>第3階層ページ<', ' class="min-w-0 truncate">' + escapeHtml(blog.title) + '<');
+html = html.replace(
+  '</head>',
+  '<link rel="preconnect" href="https://images.microcms-assets.io" crossorigin>' +
+  (eyecatchImg ? `<link rel="preload" as="image" href="${eyecatchImg}" fetchpriority="high">` : '') +
+  '<style>nav ol>li.shrink-0+li{flex-shrink:0}</style></head>'
+);
 html = html.replace('>0000.00.00<', '>' + date + '<');
-html = html.replace(/(<h1[^>]*>).*?(<\/h1>)/s, '$1' + escapeHtml(blog.title) + '$2');
+html = html.replace(/(<h1[^>]*>).*?(<\/h1>)/s, '$1' + escapeHtml(blog.title) + '$2' + subTags(blog.title, id ?? ''));
 if (cat) html = html.replaceAll('>ダミーカテゴリ<', '>' + escapeHtml(cat) + '<');
 
 // Replace ALL blog-01.jpg placeholder occurrences (src and srcset) with eyecatch
-if (eyecatchUrl) {
-  html = html.replaceAll('/images/blog-01.jpg', eyecatchUrl);
+if (eyecatchImg) {
+  html = html.replaceAll('/images/blog-01.jpg', eyecatchImg);
 }
 
 // --- Strip WIX-scraped metadata from body HTML ---
+// ※ 要素の「先頭」がメタ情報のときだけ削除する（本文中に同じ語が出ても壊さない）。
+//   対象タグは p/li/div/span に限定し、</a> 等の閉じタグを開始タグと誤認しない。
 function cleanWixContent(body: string): string {
+  const E = '(?:p|li|div|span)';
   // Remove the first <h1> (duplicate article title)
   body = body.replace(/<h1[^>]*>[\s\S]*?<\/h1>/, '');
 
-  // Remove elements containing Japanese date (e.g. 2025年10月27日)
-  body = body.replace(/<(?:p|li|div|span)[^>]*>[^<]*\d{4}年\d{1,2}月\d{1,2}日[^<]*<\/(?:p|li|div|span)>/g, '');
-
-  // Remove 読了時間 line
-  body = body.replace(/<[^>]+>[^<]*読了時間[^<]*<\/[^>]+>/g, '');
-
-  // Remove 閲覧数 element (label + possible sibling number)
-  body = body.replace(/<[^>]+>[^<]*閲覧数[^<]*<\/[^>]+>/g, '');
-
-  // Remove コメント element
-  body = body.replace(/<[^>]+>[^<]*件のコメント[^<]*<\/[^>]+>/g, '');
-
-  // Remove いいね！ element
-  body = body.replace(/<[^>]+>[^<]*いいね！[^<]*<\/[^>]+>/g, '');
-
-  // Remove 更新日 line
-  body = body.replace(/<[^>]+>[^<]*更新日[：:][^<]*<\/[^>]+>/g, '');
+  // 先頭が日付だけの行（例: 2025年10月27日）
+  body = body.replace(new RegExp(`<${E}[^>]*>\\s*\\d{4}年\\d{1,2}月\\d{1,2}日[^<]*<\\/${E}>`, 'g'), '');
+  // 先頭が「読了時間」
+  body = body.replace(new RegExp(`<${E}[^>]*>\\s*読了時間[^<]*<\\/${E}>`, 'g'), '');
+  // 先頭が「閲覧数」
+  body = body.replace(new RegExp(`<${E}[^>]*>\\s*閲覧数[^<]*<\\/${E}>`, 'g'), '');
+  // 先頭が「(数字)件のコメント」
+  body = body.replace(new RegExp(`<${E}[^>]*>\\s*\\d*\\s*件のコメント[^<]*<\\/${E}>`, 'g'), '');
+  // 先頭が「(数字)いいね！」
+  body = body.replace(new RegExp(`<${E}[^>]*>\\s*\\d*\\s*いいね！[^<]*<\\/${E}>`, 'g'), '');
+  // 先頭が「更新日：」
+  body = body.replace(new RegExp(`<${E}[^>]*>\\s*更新日[：:][^<]*<\\/${E}>`, 'g'), '');
 
   // Remove standalone numeric elements (view count, like count numbers like 551, 0)
-  body = body.replace(/<(?:p|li|div|span)[^>]*>\s*\d{1,7}\s*<\/(?:p|li|div|span)>/g, '');
+  body = body.replace(new RegExp(`<${E}[^>]*>\\s*\\d{1,7}\\s*<\\/${E}>`, 'g'), '');
 
   // Clean up empty <ul> / <ol> left over
   body = body.replace(/<(?:ul|ol)[^>]*>\s*<\/(?:ul|ol)>/g, '');
@@ -179,8 +227,8 @@ html { scroll-behavior: smooth; }
 }
 /* ── Body text ── */
 .cms-body p { margin-bottom: 1em; }
-.cms-body ol { margin: 1em 0; padding-left: 2em; }
-.cms-body ol li { margin-bottom: 0.5em; line-height: 1.75; }
+.cms-body ol { margin: 1em 0; padding-left: 1.6em; list-style: decimal outside; }
+.cms-body ol li { margin-bottom: 0.5em; line-height: 1.75; list-style: decimal outside; padding-left: 0.2em; }
 .cms-body ul { margin: 1em 0; padding-left: 0.4em; }
 .cms-body ul > li { list-style: none; padding-left: 1.5em; position: relative; margin-bottom: 0.6em; line-height: 1.75; }
 .cms-body ul > li::before { content: "▶"; color: #60A5FA; position: absolute; left: 0; font-size: 0.68em; top: 0.42em; }
@@ -193,6 +241,12 @@ html { scroll-behavior: smooth; }
 .cms-body table { border-collapse: collapse; width: 100%; margin: 1.5em 0; table-layout: auto; }
 .cms-body th { background: #DBEAFE; color: #1E40AF; font-weight: 700; text-align: center; padding: 10px 14px; border: 1px solid #93C5FD; white-space: nowrap; }
 .cms-body td { border: 1px solid #DBEAFE; padding: 9px 13px; text-align: center; vertical-align: middle; }
+.cms-body .cm-table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; margin: 1.5em 0; }
+.cms-body .cm-table-wrap > table { margin: 0; }
+@media (max-width: 640px) {
+  .cms-body .cm-table-wrap > table { min-width: 560px; }
+  .cms-body th, .cms-body td { padding: 8px 10px; font-size: 14px; }
+}
 .cms-body blockquote { border-left: 4px solid #93C5FD; background: #F0F9FF; margin: 1.5em 0; padding: 12px 16px; color: #374151; border-radius: 0 6px 6px 0; }
 </style>`;
 
@@ -209,18 +263,49 @@ const tocJs = `<script>
   }
   if (!toc) return;
   toc.classList.add('toc-box');
-  // Fix heading IDs to match TOC links
+  // Map each TOC link to its heading. microCMS overrides heading ids with
+  // its own hashes, so the original #h-sN / named anchors don't resolve.
+  // Re-point each link to the live heading id using, in order of priority:
+  //   1. exact text match  2. prefix match  3. positional fallback.
+  // A moving pointer keeps links in document order, so descriptive TOCs
+  // (link text differs from the heading) still map correctly, while the
+  // わかること/目次 headings are excluded so the index never shifts.
+  var norm = function(s) { return (s || '').replace(/\s+/g, '').trim(); };
   var links = toc.querySelectorAll('a[href^="#"]');
-  var headings = Array.from(body.querySelectorAll('h2, h3, h4')).filter(function(h) {
-    return !toc.contains(h);
-  });
-  var hi = 0;
+  var cands = Array.from(body.querySelectorAll('h2, h3, h4')).filter(function(h) {
+    if (toc.contains(h)) return false;
+    var t = norm(h.textContent);
+    return t !== 'この記事でわかること' && t !== '目次';
+  }).map(function(h) { return { el: h, text: norm(h.textContent), used: false }; });
+  var ptr = 0;
   links.forEach(function(link) {
-    var anchor = link.getAttribute('href').slice(1);
-    if (!document.getElementById(anchor) && hi < headings.length) {
-      headings[hi].id = anchor;
+    var lt = norm(link.textContent);
+    var target = null, ti = -1;
+    // 1. exact text match (first unused)
+    for (var k = 0; k < cands.length; k++) {
+      if (!cands[k].used && cands[k].text === lt) { target = cands[k]; ti = k; break; }
     }
-    hi++;
+    // 2. prefix match (heading truncated/suffixed vs link), min length guard
+    if (!target && lt.length >= 6) {
+      for (var k2 = 0; k2 < cands.length; k2++) {
+        var ct = cands[k2].text;
+        if (!cands[k2].used && (ct.indexOf(lt) === 0 || lt.indexOf(ct) === 0)) {
+          target = cands[k2]; ti = k2; break;
+        }
+      }
+    }
+    // 3. positional: next unused H2 at/after the pointer
+    if (!target) {
+      for (var k3 = ptr; k3 < cands.length; k3++) {
+        if (!cands[k3].used && cands[k3].el.tagName === 'H2') { target = cands[k3]; ti = k3; break; }
+      }
+    }
+    if (target) {
+      target.used = true;
+      ptr = ti + 1;
+      if (!target.el.id) target.el.id = link.getAttribute('href').slice(1);
+      link.setAttribute('href', '#' + target.el.id);
+    }
   });
   // Color-code blockquotes by emoji prefix
   body.querySelectorAll('blockquote').forEach(function(bq) {
@@ -265,34 +350,27 @@ const leadHtml = override?.lead
   ? `<div style="background:#EFF6FF;border-left:5px solid #3B82F6;padding:16px 20px;margin:0 0 28px;border-radius:0 8px 8px 0;"><p style="margin:0;font-size:15px;line-height:1.8;color:#1E3A5F;">${escapeHtml(override.lead)}</p></div>`
   : '';
 
-// --- Override FAQ block ---
+// --- Override FAQ block（セクション間隔はコンテナの gap-20 に統一） ---
 const overrideFaqHtml = override?.faqs?.length
-  ? `<div class="cms-body" id="seo-faq" style="margin-top:40px;"><h2 id="h-faq">よくある質問</h2>` +
+  ? `<div class="cms-body" id="seo-faq"><h2 id="h-faq">よくある質問</h2>` +
     override.faqs.map((f, i) =>
       `<h3>Q${i + 1}. ${escapeHtml(f.q)}</h3><p>${escapeHtml(f.a)}</p>`
     ).join('') +
     `</div>`
   : '';
 
-// --- Override related links block ---
-const overrideRelatedHtml = validRelatedLinks.length
-  ? `<div class="cms-body" id="seo-related" style="margin-top:40px;"><h2>関連して読まれている記事</h2><ul>` +
-    validRelatedLinks.map(l =>
-      `<li><a href="${l.href}" data-ga="related_article_click">${escapeHtml(l.label)}</a></li>`
-    ).join('') +
-    `</ul></div>`
-  : '';
-
 const bodyHtml = blog.body ?? blog.content ?? '';
 if (bodyHtml) {
   let cleanedBody = cleanWixContent(bodyHtml);
+  // 表をモバイルで横スクロール可能に（microCMSがinline styleを除去するためフロント側でラップ）
+  cleanedBody = cleanedBody.replace(/<table/g, '<div class="cm-table-wrap"><table').replace(/<\/table>/g, '</table></div>');
+  // 本文のmicroCMS画像をWebP化＋幅制限（表示は最大720px幅・retina考慮で880px、非拡大）
+  cleanedBody = cleanedBody.replace(/(<img[^>]+src=")(https:\/\/images\.microcms-assets\.io\/[^"?]+)"/g, '$1$2?fm=webp&w=880&q=78&fit=max"');
+  // 2つ目の本文段落末にミニCTA（離脱前接触）
+  if (island) cleanedBody = injectMiniCta(cleanedBody, island, id ?? '');
   // override.faqs が指定されているときだけ本文FAQをストリップして差し替える
   if (override?.faqs?.length) {
     cleanedBody = cleanedBody.replace(/<h2[^>]*>[^<]*よくある質問[^<]*<\/h2>[\s\S]*?(?=<h2|$)/gi, '');
-  }
-  // override.relatedLinks が指定されているときだけ本文の関連記事ブロックをストリップ
-  if (override?.relatedLinks?.length) {
-    cleanedBody = cleanedBody.replace(/<h2[^>]*>\s*合わせて読みたい[^<]*<\/h2>[\s\S]*?(?=<h2[^>]*>\s*まとめ|$)/gi, '');
   }
   const BODY_START = '<div class="pt-20 flex flex-col gap-20">';
   const BODY_END   = '</div></article>';
@@ -303,7 +381,9 @@ if (bodyHtml) {
       leadHtml +
       '<div class="cms-body">' + cleanedBody + '</div>' +
       overrideFaqHtml +
-      overrideRelatedHtml +
+      (island ? articleEndCta(island, id ?? '') : '') +
+      authorBox() +
+      mobileArticleBanners() +
       BODY_END + html.slice(ei + BODY_END.length);
   }
 }
@@ -402,11 +482,32 @@ const breadcrumbSchema = JSON.stringify({
     { '@type': 'ListItem', position: 3, name: blog.title, item: pageUrl },
   ],
 });
-// FAQPage schema (override articles only)
-const faqPageSchema = override?.faqs?.length ? JSON.stringify({
+// FAQPage schema: override 記事は手動マップを使用。それ以外は本文「よくある質問」を自動パースして生成。
+// 本文FAQ(microCMS content)構造: <h2>よくある質問</h2> に続く <p><strong>Q…</strong></p><p>回答</p> の繰り返し。
+function stripFaqTags(s) {
+  return s.replace(/<[^>]+>/g, '').replace(/&amp;/g, '&').replace(/\s+/g, ' ').trim();
+}
+function extractBodyFaqs(htmlStr) {
+  if (!htmlStr) return [];
+  const sec = htmlStr.match(/<h2[^>]*>[^<]*よくある質問[^<]*<\/h2>([\s\S]*?)(?=<h2|$)/i);
+  if (!sec) return [];
+  const faqs = [];
+  const re = /<p>\s*<strong>([\s\S]*?)<\/strong>\s*<\/p>\s*<p>([\s\S]*?)<\/p>/gi;
+  let m;
+  while ((m = re.exec(sec[1])) !== null) {
+    const q = stripFaqTags(m[1]).replace(/^Q\s*[.．:：]?\s*/i, '').trim();
+    const a = stripFaqTags(m[2]).trim();
+    if (q && a) faqs.push({ q, a });
+  }
+  return faqs;
+}
+const faqForSchema = override?.faqs?.length
+  ? override.faqs
+  : extractBodyFaqs(blog.body ?? blog.content ?? '');
+const faqPageSchema = faqForSchema.length ? JSON.stringify({
   '@context': 'https://schema.org',
   '@type': 'FAQPage',
-  mainEntity: override.faqs.map(f => ({
+  mainEntity: faqForSchema.map(f => ({
     '@type': 'Question',
     name: f.q,
     acceptedAnswer: { '@type': 'Answer', text: f.a },
@@ -436,8 +537,30 @@ document.addEventListener('click',function(e){
 })();</script>`;
 
 html = html.replace(/<link rel="canonical"[^>]*>/i, '');
-html = html.replace('</head>', canonical + ogTags + schemaScripts + articleCss + '</head>');
+html = html.replace('</head>', canonical + ogTags + schemaScripts + articleCss + SIDEBAR_STYLE + ARTICLE_CTA_CSS + '</head>');
 html = html.replace('</body>', tocJs + ga4Js + '</body>');
+
+// 記事内の cocomake-guide リンク（バナー・本文CTA）に流入分析用UTMを付与
+html = html.replaceAll(
+  'href="https://www.cocomake-guide.com/analysis"',
+  'href="https://www.cocomake-guide.com/analysis?utm_source=cocomarke&utm_medium=blog_sidebar&utm_campaign=blog&utm_content=banner_diagnosis"'
+);
+html = html.replaceAll(
+  'href="https://www.cocomake-guide.com/servicedocument"',
+  'href="https://www.cocomake-guide.com/servicedocument?utm_source=cocomarke&utm_medium=blog_sidebar&utm_campaign=blog&utm_content=banner_document"'
+);
+
+// 既存の右サイドバー（aside＋バナー2枚）を新サイドバー（診断CTA→最新記事→検索）に差し替え
+const ASIDE_OPEN = '<aside class="hidden lg:flex flex-col gap-10 w-[280px] shrink-0 pt-[120px]">';
+const asideStart = html.indexOf(ASIDE_OPEN);
+if (asideStart !== -1) {
+  const asideEnd = html.indexOf('</aside>', asideStart);
+  if (asideEnd !== -1) {
+    html = html.slice(0, asideStart) + articleSidebar(latestItems) + html.slice(asideEnd + '</aside>'.length);
+  }
+}
+
+html = injectGtm(html);
 
 return new Response(html, {
   headers: {

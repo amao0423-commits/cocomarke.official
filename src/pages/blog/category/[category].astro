@@ -1,0 +1,86 @@
+---
+import blogIndexHtml from '../../../../templates/blog/index.html?raw';
+import { client, cached, mapBlog, type Blog } from '../../../lib/microcms';
+import { injectGtm } from '../../../lib/gtm';
+import { fullSidebar, SIDEBAR_STYLE, type CategoryCount } from '../../../lib/blogSidebar';
+import { renderCards, categoryTabs, resultsHeading, catName } from '../../../lib/blogList';
+
+const DEFINED_ORDER = ['運用の基本', 'SNS戦略', '集客', '検索対策', '活用事例', '最新情報'];
+
+const { category: rawCategory } = Astro.params;
+const category = decodeURIComponent(rawCategory ?? '');
+
+const blogs = await cached<Blog[]>('blogs-list', async () => {
+  const res = await client.getList<any>({
+    endpoint: 'blogs',
+    queries: { limit: 100, orders: '-publishedAt', fields: 'id,title,day,publishedAt,eyecatch,category' },
+  });
+  return res.contents.map(mapBlog);
+}).catch(() => [] as Blog[]);
+
+const sorted = [...blogs].sort((a, b) => {
+  const da = a.day ?? a.publishedAt;
+  const db = b.day ?? b.publishedAt;
+  return db.localeCompare(da);
+});
+
+// カテゴリー一覧（件数）
+const catsInUse = new Set<string>();
+sorted.forEach(b => { const c = catName(b); if (c) catsInUse.add(c); });
+const sortedCats = [
+  ...DEFINED_ORDER.filter(c => catsInUse.has(c)),
+  ...[...catsInUse].filter(c => !DEFINED_ORDER.includes(c)),
+];
+// 存在しないカテゴリーは /blog/ へ
+if (!catsInUse.has(category)) return Astro.redirect('/blog/');
+
+const categories: CategoryCount[] = sortedCats.map(name => ({
+  name,
+  count: sorted.filter(b => catName(b) === name).length,
+}));
+
+const displayBlogs = sorted.filter(b => catName(b) === category);
+
+let html = blogIndexHtml;
+
+// パンくず/見出しに使うタイトル
+const pageTitle = `${category}の記事一覧｜COCOマーケ ブログ`;
+const pageDesc = `「${category}」に関するInstagram運用の記事一覧です。COCOマーケが${category}のノウハウをわかりやすく解説します。`;
+const pageUrl = `https://www.cocomarke.com/blog/category/${encodeURIComponent(category)}/`;
+
+// タイトル・メタを差し替え
+html = html.replace(/<title>[\s\S]*?<\/title>/i, `<title>${pageTitle}</title>`);
+html = html.replace(/<meta name="description"[^>]*>/i, `<meta name="description" content="${pageDesc}">`);
+
+// ── カテゴリータブ（カテゴリーページはリンク遷移） ──
+const TAB_START = '<div class="lg:hidden relative">';
+const TAB_END_MARKER = 'rounded-r-[40px] ">集客</button></div>';
+const tsi = html.indexOf(TAB_START);
+const tei = html.indexOf(TAB_END_MARKER);
+if (tsi !== -1 && tei !== -1) {
+  const { desktop, mobile } = categoryTabs(sortedCats, 'link', category);
+  html = html.slice(0, tsi) + mobile + desktop + html.slice(tei + TAB_END_MARKER.length);
+}
+
+// ── 記事グリッド（2カラム＋サイドバー） ──
+const SPLIT = '<div class="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-6 mt-10 lg:mt-16">';
+const si = html.indexOf(SPLIT);
+if (si !== -1) {
+  const secClose = html.indexOf('</section>', si);
+  const gridBody = '<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-6 mt-4 lg:mt-6">' + renderCards(displayBlogs) + '</div>';
+  const inner =
+    '<div class="cm-blog-layout"><div class="cm-blog-main">' +
+      resultsHeading({ category, count: displayBlogs.length }) +
+      gridBody +
+    '</div>' + fullSidebar(categories) + '</div>';
+  html = html.slice(0, si) + inner + html.slice(secClose);
+}
+
+// ── canonical（インデックス対象）＋ CSS / GTM ──
+const canonical = `<link rel="canonical" href="${pageUrl}"><meta property="og:url" content="${pageUrl}">`;
+html = html.replace(/<link rel="canonical"[^>]*>/i, '');
+html = html.replace('</head>', canonical + SIDEBAR_STYLE + '</head>');
+html = injectGtm(html);
+
+return new Response(html, { headers: { 'Content-Type': 'text/html; charset=utf-8' } });
+---

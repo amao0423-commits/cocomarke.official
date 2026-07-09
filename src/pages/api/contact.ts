@@ -1,5 +1,6 @@
 import type { APIRoute } from 'astro';
 import { Resend } from 'resend';
+import { sendMetaLead } from '../../lib/metaCapi';
 
 const INQUIRY_TYPE_MAP: Record<string, string> = {
   service: 'サービスについて',
@@ -27,10 +28,10 @@ export const POST: APIRoute = async ({ request }) => {
     );
   }
 
-  const { inquiryType = '', company = '', name = '', furigana = '', url = '', email = '', phone = '', referral = '', message = '' } = data;
+  const { inquiryType = '', company = '', name = '', furigana = '', url = '', email = '', phone = '', referral = '', message = '', event_id = '' } = data;
 
-  // 必須チェック
-  if (!name || !furigana || !email || !phone || !message) {
+  // 必須チェック（電話・本文は任意）
+  if (!name || !furigana || !email) {
     return new Response(JSON.stringify({ success: false, error: 'required' }), { status: 400 });
   }
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
@@ -240,6 +241,12 @@ export const POST: APIRoute = async ({ request }) => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(slackPayload),
       }).catch(err => console.error('Slack notify error:', err));
+    }
+
+    // Meta Conversions API: Lead送信（メール・電話はサーバー側でハッシュ化）。
+    // ブラウザPixel(thanksページ)と同じ event_id で重複排除される。ベストエフォート。
+    if (event_id) {
+      await sendMetaLead({ request, eventId: event_id, email, phone });
     }
 
     return new Response(JSON.stringify({ success: true }), { status: 200 });

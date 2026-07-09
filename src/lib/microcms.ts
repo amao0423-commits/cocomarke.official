@@ -3,6 +3,7 @@ import { createClient } from 'microcms-js-sdk';
 export const client = createClient({
   serviceDomain: 'cocomarke',
   apiKey: import.meta.env.MICROCMS_API_KEY,
+  customRequestInit: { cache: 'no-store' },
 });
 
 // ---- Raw API types (microCMS field IDs as keys) ----

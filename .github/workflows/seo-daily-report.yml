@@ -11,9 +11,16 @@ on:
 # GOOGLE_OAUTH_REFRESH_TOKEN   リフレッシュトークン（GSC+GA4スコープ）
 # GSC_SITE_URL                 例) https://www.cocomarke.com/
 # GA4_PROPERTY_ID              例) 483595220
+# CLARITY_PROJECT_ID           Microsoft Clarity プロジェクトID
+# CLARITY_API_TOKEN            Clarity Data Export API トークン
 # SLACK_WEBHOOK_URL            Slack Incoming Webhook URL
 # MICROCMS_API_KEY             microCMSコンテンツAPIキー
+# （AI要約は GitHub Models を利用。鍵不要・自動の GITHUB_TOKEN を使用）
 # ───────────────────────────────────────────────────────────────────────────
+
+permissions:
+  contents: read
+  models: read   # GitHub Models（無料AI要約）の利用に必要
 
 jobs:
   report:
@@ -38,6 +45,7 @@ jobs:
           GA4_PROPERTY_ID: ${{ secrets.GA4_PROPERTY_ID }}
           CLARITY_PROJECT_ID: ${{ secrets.CLARITY_PROJECT_ID }}
           CLARITY_API_TOKEN: ${{ secrets.CLARITY_API_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
           MICROCMS_API_KEY: ${{ secrets.MICROCMS_API_KEY }}
         run: node scripts/seo-daily-report.mjs

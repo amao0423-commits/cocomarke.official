@@ -3,6 +3,7 @@ import aboutHtml from '../../templates/about/index.html?raw';
 import contactHtml from '../../templates/contact/index.html?raw';
 import privacyHtml from '../../templates/privacy/index.html?raw';
 import thanksHtml from '../../templates/contact/thanks/index.html?raw';
+import { injectGtm } from '../lib/gtm';
 
 const { slug } = Astro.params;
 
@@ -22,6 +23,38 @@ const pageUrl = 'https://www.cocomarke.com/' + String(slug) + '/';
 const staticCanonical = `<link rel="canonical" href="${pageUrl}"><meta property="og:url" content="${pageUrl}">`;
 html = html.replace(/<link rel="canonical"[^>]*>/i, '');
 html = html.replace('</head>', staticCanonical + '</head>');
+
+if (String(slug) === 'contact/thanks') {
+  // ブラウザPixelの Lead を発火。event_id はフォーム送信時に sessionStorage へ
+  // 保存されたものを再利用し、/api/contact が送るサーバーCAPI(Lead)と重複排除する。
+  // サーバー側CAPIは email/phone をハッシュ化して送るため、計測精度はそちらが担保する。
+  const leadTrackingScript = `<script>
+(function(){
+  var storageKey='cocomarke_meta_lead_event';
+  var now=Date.now();
+  var stored=null;
+  try{stored=JSON.parse(sessionStorage.getItem(storageKey)||'null');}catch(e){}
+  if(!stored||!stored.event_id||!stored.created_at||now-stored.created_at>1800000){
+    var randomPart=(window.crypto&&crypto.randomUUID)?crypto.randomUUID():String(now)+'-'+Math.random().toString(16).slice(2);
+    stored={event_id:'lead-'+randomPart,created_at:now};
+    try{sessionStorage.setItem(storageKey,JSON.stringify(stored));}catch(e){}
+  }
+  function sendLead(){
+    if(typeof fbq==='function'){
+      fbq('track','Lead',{}, {eventID: stored.event_id});
+    }
+  }
+  if(document.readyState==='loading'){
+    document.addEventListener('DOMContentLoaded',sendLead,{once:true});
+  }else{
+    sendLead();
+  }
+})();
+</script>`;
+  html = html.replace('</body>', leadTrackingScript + '</body>');
+}
+
+html = injectGtm(html);
 
 return new Response(html, { headers: { 'Content-Type': 'text/html; charset=utf-8' } });
 ---

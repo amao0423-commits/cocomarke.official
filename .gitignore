@@ -7,3 +7,6 @@ dist/
 .astro/
 .eyecatch-tmp/
 scripts/.preview/
+.claude/
+client_secret.json
+get-refresh-token.mjs

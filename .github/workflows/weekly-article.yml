@@ -1,10 +1,10 @@
 name: Weekly Article Generation
 
 on:
-  # 自動投稿を再開。毎週金曜に1記事を自動生成・公開。
-  # 火曜の weekly-seo-research（Slackレポート）を参考に、必要なら手動実行で上書き可。
-  schedule:
-    - cron: '0 9 * * 5'   # 毎週金曜 18:00 JST 自動公開
+  # 自動投稿は一旦中断（2026-07-09）。GitHub Models移行後の記事品質を見直すまで手動実行のみ。
+  # 再開する場合は下の schedule のコメントを外す。
+  # schedule:
+  #   - cron: '0 9 * * 5'   # 毎週金曜 18:00 JST 自動公開
 
   workflow_dispatch:
     inputs:

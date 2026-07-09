@@ -6,18 +6,16 @@
  * - Inserts mid-article image
  * - Generates branded eyecatch with eyecatch.mjs and uploads to microCMS
  * - Uploads to microCMS with English slug as content ID
- * - Sends email + Slack notification
+ * - Sends Slack notification
  *
  * Required env vars:
  *   GITHUB_TOKEN              (GitHub Models 無料AI。Actionsでは permissions: models:read が必要)
  *   MICROCMS_SERVICE_DOMAIN   (e.g. "cocomarke")
  *   MICROCMS_WRITE_API_KEY    (write permission required)
  *   SLACK_WEBHOOK_URL         (optional — Slack notification)
- *   SMTP_PASS                 (optional — email notification)
  *   ARTICLE_DATE              (optional — override date, YYYY-MM-DD)
  */
 
-import nodemailer from 'nodemailer';
 import { uploadEyecatch } from './eyecatch.mjs';
 
 const GITHUB_TOKEN             = process.env.GITHUB_TOKEN;
@@ -27,7 +25,6 @@ const GH_ARTICLE_MODEL         = process.env.GH_ARTICLE_MODEL || 'openai/gpt-4o'
 const MICROCMS_SERVICE_DOMAIN  = process.env.MICROCMS_SERVICE_DOMAIN ?? 'cocomarke';
 const MICROCMS_WRITE_API_KEY   = process.env.MICROCMS_WRITE_API_KEY ?? process.env.MICROCMS_API_KEY;
 const SLACK_WEBHOOK_URL        = process.env.SLACK_WEBHOOK_URL;
-const SMTP_PASS                = process.env.SMTP_PASS;
 const MEDIA_URL                = `https://${MICROCMS_SERVICE_DOMAIN}.microcms-management.io/api/v1/media`;
 // weekly-seo-research.mjs のSlackレポートで選んだキーワードをここに設定して手動実行する
 const KEYWORD_OVERRIDE         = process.env.KEYWORD_OVERRIDE ?? '';
@@ -391,36 +388,12 @@ ${relatedHtml}
   const publicUrl = `https://www.cocomarke.com/blog/${contentId}/`;
   console.log(`公開: ${publicUrl}`);
 
-  // 9. メール通知
-  if (SMTP_PASS) {
-    const transporter = nodemailer.createTransport({
-      host:   'mail1028.onamae.ne.jp',
-      port:   465,
-      secure: true,
-      auth:   { user: 'info@cocomarke.com', pass: SMTP_PASS },
-    });
-    await transporter.sendMail({
-      from:    '"COCOマーケ Bot" <info@cocomarke.com>',
-      to:      'info@cocomarke.com',
-      subject: `【自動投稿】${plan.titleJa}`,
-      text:    [
-        '週次自動記事が投稿されました。',
-        '',
-        `■ タイトル  : ${plan.titleJa}`,
-        `■ カテゴリー: ${plan.category}`,
-        `■ キーワード: ${plan.keyword}`,
-        `■ スラッグ  : ${contentId}`,
-        `■ URL       : ${publicUrl}`,
-        `■ 投稿日    : ${today}`,
-        '',
-        '記事の内容を確認・編集するには microCMS 管理画面をご確認ください。',
-      ].join('\n'),
-    });
-    console.log('メール送信完了');
+  // 9. Slack 通知（失敗してもジョブは落とさない。メール通知は廃止）
+  try {
+    await notifySlack({ title: plan.titleJa, category: plan.category, keyword: plan.keyword, contentId, publicUrl, today });
+  } catch (e) {
+    console.warn(`Slack通知スキップ: ${e.message.slice(0, 120)}`);
   }
-
-  // 10. Slack 通知
-  await notifySlack({ title: plan.titleJa, category: plan.category, keyword: plan.keyword, contentId, publicUrl, today });
 
   console.log('Done!');
 }

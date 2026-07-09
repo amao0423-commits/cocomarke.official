@@ -50,7 +50,6 @@ jobs:
           MICROCMS_SERVICE_DOMAIN: ${{ secrets.MICROCMS_SERVICE_DOMAIN }}
           MICROCMS_WRITE_API_KEY: ${{ secrets.MICROCMS_WRITE_API_KEY }}
           PEXELS_API_KEY: ${{ secrets.PEXELS_API_KEY }}
-          SMTP_PASS: ${{ secrets.SMTP_PASS }}
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
           KEYWORD_OVERRIDE: ${{ github.event.inputs.keyword }}
           ARTICLE_DATE: ${{ github.event.inputs.article_date }}

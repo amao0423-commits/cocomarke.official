@@ -9,7 +9,7 @@
  * - Sends email + Slack notification
  *
  * Required env vars:
- *   ANTHROPIC_API_KEY
+ *   GITHUB_TOKEN              (GitHub Models 無料AI。Actionsでは permissions: models:read が必要)
  *   MICROCMS_SERVICE_DOMAIN   (e.g. "cocomarke")
  *   MICROCMS_WRITE_API_KEY    (write permission required)
  *   SLACK_WEBHOOK_URL         (optional — Slack notification)
@@ -17,11 +17,13 @@
  *   ARTICLE_DATE              (optional — override date, YYYY-MM-DD)
  */
 
-import Anthropic from '@anthropic-ai/sdk';
 import nodemailer from 'nodemailer';
 import { uploadEyecatch } from './eyecatch.mjs';
 
-const ANTHROPIC_API_KEY       = process.env.ANTHROPIC_API_KEY;
+const GITHUB_TOKEN             = process.env.GITHUB_TOKEN;
+const GH_MODELS_URL            = 'https://models.github.ai/inference/chat/completions';
+const GH_PLAN_MODEL            = process.env.GH_PLAN_MODEL    || 'openai/gpt-4o-mini';
+const GH_ARTICLE_MODEL         = process.env.GH_ARTICLE_MODEL || 'openai/gpt-4o';
 const MICROCMS_SERVICE_DOMAIN  = process.env.MICROCMS_SERVICE_DOMAIN ?? 'cocomarke';
 const MICROCMS_WRITE_API_KEY   = process.env.MICROCMS_WRITE_API_KEY ?? process.env.MICROCMS_API_KEY;
 const SLACK_WEBHOOK_URL        = process.env.SLACK_WEBHOOK_URL;
@@ -31,6 +33,21 @@ const MEDIA_URL                = `https://${MICROCMS_SERVICE_DOMAIN}.microcms-ma
 const KEYWORD_OVERRIDE         = process.env.KEYWORD_OVERRIDE ?? '';
 
 const CATEGORIES = ['検索対策', 'SNS戦略', '運用の基本', '活用事例', '最新情報', '集客'];
+
+// ── GitHub Models（無料・GITHUB_TOKEN）でチャット補完。Anthropic API の置き換え ──
+async function ghChat({ messages, max_tokens, model = GH_PLAN_MODEL, temperature = 0.7 }) {
+  const res = await fetch(GH_MODELS_URL, {
+    method:  'POST',
+    headers: { Authorization: `Bearer ${GITHUB_TOKEN}`, 'Content-Type': 'application/json' },
+    body:    JSON.stringify({ model, temperature, max_tokens, messages }),
+    signal:  AbortSignal.timeout(180_000),
+  });
+  if (!res.ok) throw new Error(`GitHub Models ${res.status}: ${(await res.text()).slice(0, 300)}`);
+  const d = await res.json();
+  const content = d.choices?.[0]?.message?.content;
+  if (!content) throw new Error(`GitHub Models empty response: ${JSON.stringify(d).slice(0, 200)}`);
+  return content.trim();
+}
 
 // 日本語ソースを追加（英語のみだと日本市場とズレるため）
 const REFERENCE_SOURCES = [
@@ -138,10 +155,10 @@ function generateSlug(text) {
 // ─── main ───────────────────────────────────────────────────────────────────
 
 async function main() {
-  if (!ANTHROPIC_API_KEY)     throw new Error('ANTHROPIC_API_KEY is required');
+  if (!GITHUB_TOKEN)          throw new Error('GITHUB_TOKEN is required (GitHub Models)');
   if (!MICROCMS_WRITE_API_KEY) throw new Error('MICROCMS_WRITE_API_KEY is required');
 
-  const client = new Anthropic({ apiKey: ANTHROPIC_API_KEY });
+  // 生成AIは GitHub Models（ghChat）を使用（無料・方針準拠）
   // workflow_dispatch で空欄入力されると ARTICLE_DATE は空文字になるため、|| で当日にフォールバック（?? だと空文字が残り day 必須エラーになる）
   const today  = process.env.ARTICLE_DATE || new Date().toISOString().slice(0, 10);
 
@@ -166,9 +183,8 @@ async function main() {
 
   if (KEYWORD_OVERRIDE) {
     console.log(`[KW Override] "${KEYWORD_OVERRIDE}" で記事構成を分析中...`);
-    const planRes = await client.messages.create({
-      model:      'claude-opus-4-7',
-      max_tokens: 800,
+    const raw = await ghChat({
+      model: GH_PLAN_MODEL, max_tokens: 800, temperature: 0.4,
       messages: [{
         role:    'user',
         content: `以下のキーワードで日本語Instagram解説記事を作成します。検索意図を分析し、最適な記事設計を提案してください。
@@ -185,17 +201,15 @@ async function main() {
       }],
     });
     try {
-      const raw = planRes.content[0].text.trim();
       plan = JSON.parse(raw.match(/\{[\s\S]+\}/)?.[0] ?? raw);
     } catch {
-      throw new Error(`plan JSON parse failed: ${planRes.content[0].text}`);
+      throw new Error(`plan JSON parse failed: ${raw}`);
     }
     console.log('[KW Override] 構成案:', plan);
   } else {
     console.log('[Auto Select] トピックをClaudeが選定中...（週次Slackレポートで事前確認推奨）');
-    const planRes = await client.messages.create({
-      model:      'claude-opus-4-7',
-      max_tokens: 800,
+    const raw = await ghChat({
+      model: GH_PLAN_MODEL, max_tokens: 800, temperature: 0.4,
       messages: [{
         role:    'user',
         content: `以下は${today}現在のInstagram・SNSマーケティング関連の最新情報です（日本語ソース含む）。\n\n${combinedSources}\n\n` +
@@ -207,10 +221,9 @@ async function main() {
       }],
     });
     try {
-      const raw = planRes.content[0].text.trim();
       plan = JSON.parse(raw.match(/\{[\s\S]+\}/)?.[0] ?? raw);
     } catch {
-      throw new Error(`plan JSON parse failed: ${planRes.content[0].text}`);
+      throw new Error(`plan JSON parse failed: ${raw}`);
     }
     console.log('トピック（自動選定）:', plan);
   }
@@ -255,9 +268,10 @@ async function main() {
       }）`
     : '';
 
-  const articleRes = await client.messages.create({
-    model:      'claude-opus-4-7',
-    max_tokens: 14000,
+  const bodyHtml = await ghChat({
+    model:       GH_ARTICLE_MODEL,
+    max_tokens:  8000,
+    temperature: 0.7,
     messages: [{
       role:    'user',
       content: `記事タイトル: 「${plan.titleJa}」
@@ -319,7 +333,6 @@ ${relatedHtml}
     }],
   });
 
-  const bodyHtml = articleRes.content[0].text;
   console.log(`  生成文字数: ${bodyHtml.length}`);
 
   // 7. 中間画像の挿入

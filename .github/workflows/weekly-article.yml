@@ -17,6 +17,10 @@ on:
         required: false
         default: ''
 
+permissions:
+  contents: read
+  models: read   # GitHub Models（無料AI・記事生成）の利用に必要
+
 jobs:
   generate-article:
     runs-on: ubuntu-latest
@@ -42,7 +46,7 @@ jobs:
 
       - name: Generate and publish article
         env:
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           MICROCMS_SERVICE_DOMAIN: ${{ secrets.MICROCMS_SERVICE_DOMAIN }}
           MICROCMS_WRITE_API_KEY: ${{ secrets.MICROCMS_WRITE_API_KEY }}
           PEXELS_API_KEY: ${{ secrets.PEXELS_API_KEY }}

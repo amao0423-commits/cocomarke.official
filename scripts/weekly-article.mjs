@@ -142,7 +142,8 @@ async function main() {
   if (!MICROCMS_WRITE_API_KEY) throw new Error('MICROCMS_WRITE_API_KEY is required');
 
   const client = new Anthropic({ apiKey: ANTHROPIC_API_KEY });
-  const today  = process.env.ARTICLE_DATE ?? new Date().toISOString().slice(0, 10);
+  // workflow_dispatch で空欄入力されると ARTICLE_DATE は空文字になるため、|| で当日にフォールバック（?? だと空文字が残り day 必須エラーになる）
+  const today  = process.env.ARTICLE_DATE || new Date().toISOString().slice(0, 10);
 
   // 1. 既存記事を取得（重複防止 + 関連記事リンク用）
   console.log('既存記事を取得中...');

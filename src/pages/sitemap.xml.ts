@@ -1,5 +1,5 @@
 import type { APIRoute } from 'astro';
-import { client, mapBlog, mapNews } from '../lib/microcms';
+import { client, mapBlog, mapNews, fetchAllBlogs } from '../lib/microcms';
 
 const BASE = 'https://www.cocomarke.com';
 
@@ -20,8 +20,8 @@ export const GET: APIRoute = async () => {
   let categoryEntries: { url: string; lastmod: string; priority: string; changefreq: string }[] = [];
 
   try {
-    const res = await client.getList<any>({ endpoint: 'blogs', queries: { limit: 100, orders: '-publishedAt', fields: 'id,day,publishedAt,updatedAt,category' } });
-    blogEntries = res.contents.map((raw: any) => {
+    const resContents = await fetchAllBlogs<any>();
+    blogEntries = resContents.map((raw: any) => {
       const blog = mapBlog(raw);
       return {
         url: `/blog/${blog.id}/`,
@@ -32,7 +32,7 @@ export const GET: APIRoute = async () => {
     });
     // カテゴリーページ（SEO流入源としてインデックス）
     const cats = new Set<string>();
-    for (const raw of res.contents) {
+    for (const raw of resContents) {
       const c = typeof raw.category === 'string' ? raw.category : raw.category?.name;
       if (c) cats.add(c);
     }

@@ -125,16 +125,16 @@ export const SEO_OVERRIDES: Record<string, SeoOverride> = {
     lead: 'Instagramインフルエンサーマーケティングとは、インフルエンサーの発信力と信頼を活用して認知拡大・購買促進を狙う施策です。成果を出すには「誰に頼むか」より「目的・設計・測定」の3つが重要です。費用相場・選び方・PR表記のルールまで実務に必要な情報を整理します。',
     faqs: [],
     relatedLinks: [
-      { href: '/blog/instagram-management-agency-comparison/', label: 'Instagram運用代行おすすめ9選を比較' },
+      { href: '/blog/instagram-management-agency-comparison/', label: 'Instagram運用代行おすすめ13社を比較' },
       { href: '/blog/instagram-reels-tips-to-go-viral-2025/', label: 'インスタリールがバズる方法7選' },
       { href: '/blog/instagram-algorithm-latest-complete-guide/', label: 'Instagramアルゴリズム完全ガイド' },
     ],
   },
 
   'instagram-management-agency-comparison': {
-    title: 'Instagram運用代行おすすめ9選を比較｜費用相場・選び方・失敗しないポイントを解説【2026年版】',
-    description: 'Instagram運用代行会社おすすめ9社を比較。料金相場、支援範囲、得意業種、選び方をわかりやすく解説します。店舗集客・認知拡大・問い合わせ獲得など目的別に、自社に合う運用代行会社を選びたい方におすすめです。',
-    lead: 'Instagram運用代行とは、企業や店舗のInstagram運用を戦略設計から投稿・分析まで支援するサービスです。ただし、得意業種・対応範囲・料金体系は会社ごとに大きく異なります。この記事では9社を比較しながら、費用相場・選び方・目的別のおすすめを整理します。',
+    title: 'Instagram運用代行おすすめ13社を比較｜費用相場・選び方・失敗しないポイントを解説【2026年版】',
+    description: 'Instagram運用代行会社おすすめ13社を比較。料金相場、支援範囲、得意業種、選び方をわかりやすく解説します。店舗集客・認知拡大・問い合わせ獲得など目的別に、自社に合う運用代行会社を選びたい方におすすめです。',
+    lead: 'Instagram運用代行とは、企業や店舗のInstagram運用を戦略設計から投稿・分析まで支援するサービスです。ただし、得意業種・対応範囲・料金体系は会社ごとに大きく異なります。この記事では13社を比較しながら、費用相場・選び方・目的別のおすすめを整理します。',
     faqs: [],
     relatedLinks: [
       { href: '/blog/instagram-algorithm-latest-complete-guide/', label: 'Instagramアルゴリズム完全ガイド' },
@@ -180,7 +180,7 @@ export const SEO_OVERRIDES: Record<string, SeoOverride> = {
     ],
     relatedLinks: [
       { href: '/blog/instagram-reels-tips-to-go-viral-2025/', label: 'Instagram Reelsでリーチを伸ばす方法7選' },
-      { href: '/blog/instagram-management-agency-comparison/', label: 'Instagram運用代行おすすめ9選を比較' },
+      { href: '/blog/instagram-management-agency-comparison/', label: 'Instagram運用代行おすすめ13社を比較' },
       { href: '/blog/insta-influencer-marketing-guide/', label: 'Instagramインフルエンサーマーケティング完全ガイド' },
       { href: '/blog/instagram-algorithm-latest-complete-guide/', label: 'Instagramアルゴリズムの基本と運用への活かし方' },
     ],

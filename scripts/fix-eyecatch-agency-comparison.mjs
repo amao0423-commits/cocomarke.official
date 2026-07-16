@@ -6,7 +6,7 @@ import path from 'path';
 const CONTENT_KEY = process.env.MICROCMS_WRITE_API_KEY ?? process.env.MICROCMS_API_KEY;
 const SERVICE     = 'cocomarke';
 const ARTICLE_ID  = 'instagram-management-agency-comparison';
-const TITLE       = 'Instagram運用代行のおすすめ｜10社を徹底比較';
+const TITLE       = 'Instagram運用代行のおすすめ｜13社を徹底比較';
 const CATEGORY    = 'SNS戦略';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));

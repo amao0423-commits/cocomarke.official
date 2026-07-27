@@ -30,6 +30,30 @@ export const POST: APIRoute = async ({ request }) => {
 
   const { inquiryType = '', company = '', name = '', furigana = '', url = '', email = '', phone = '', referral = '', message = '', event_id = '' } = data;
 
+  // --- スパム対策 ---------------------------------------------------------
+  // 検知したら emailやSlackを送らず、静かに success:200 を返す（botに気付かせない）。
+  const honeypot = (data.website ?? '').trim();            // 隠しフィールド。人間は空
+  const tsNum = Number(data._ts ?? '');
+  const elapsed = Number.isFinite(tsNum) && tsNum > 0 ? Date.now() - tsNum : null;
+  const msgUrlCount = (message.match(/https?:\/\//gi) ?? []).length;
+  const hasLinkMarkup = /\[url|\[\/url\]|\[link|<a\s|href\s*=/i.test(`${message} ${company}`);
+  // 氏名・フリガナにURL（http/www）は通常あり得ない＝botの典型
+  const nameHasUrl = /https?:\/\/|www\./i.test(`${name} ${furigana}`);
+
+  const spamReason =
+    honeypot !== '' ? 'honeypot'
+    : (elapsed !== null && elapsed < 2500) ? 'too_fast'
+    : msgUrlCount >= 3 ? 'url_flood'
+    : hasLinkMarkup ? 'link_markup'
+    : nameHasUrl ? 'url_in_name'
+    : '';
+
+  if (spamReason) {
+    console.warn('[contact] spam blocked:', spamReason, { elapsed, msgUrlCount });
+    return new Response(JSON.stringify({ success: true }), { status: 200 });
+  }
+  // ------------------------------------------------------------------------
+
   // 必須チェック（電話・本文は任意）
   if (!name || !furigana || !email) {
     return new Response(JSON.stringify({ success: false, error: 'required' }), { status: 400 });

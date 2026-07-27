@@ -26,8 +26,27 @@ export const POST: APIRoute = async ({ request }) => {
     message = '', source = 'Instagram運用代行LP（/lp/instagram）', event_id = '', website = '',
   } = data ?? {};
 
-  // ハニーポット（ボットは website を埋めがち）→ 正常応答で握りつぶす
+  // --- スパム対策 ---------------------------------------------------------
+  // 検知したらメールを送らず success:200 を返す（botに気付かせない）
+  // ① ハニーポット（ボットは website を埋めがち）
   if (website) return json({ success: true });
+  // ② 時間トラップ（_ts があり、表示から2.5秒未満の即時送信）＋ ③ 内容検知
+  const tsNum = Number((data as Record<string, string>)._ts ?? '');
+  const elapsed = Number.isFinite(tsNum) && tsNum > 0 ? Date.now() - tsNum : null;
+  const msgUrlCount = (String(message).match(/https?:\/\//gi) ?? []).length;
+  const hasLinkMarkup = /\[url|\[\/url\]|\[link|<a\s|href\s*=/i.test(`${message} ${company}`);
+  const nameHasUrl = /https?:\/\/|www\./i.test(String(name));
+  const spamReason =
+    (elapsed !== null && elapsed < 2500) ? 'too_fast'
+    : msgUrlCount >= 3 ? 'url_flood'
+    : hasLinkMarkup ? 'link_markup'
+    : nameHasUrl ? 'url_in_name'
+    : '';
+  if (spamReason) {
+    console.warn('[lp-contact] spam blocked:', spamReason, { elapsed, msgUrlCount });
+    return json({ success: true });
+  }
+  // ------------------------------------------------------------------------
 
   if (!name || !email || !message) {
     return json({ success: false, error: '必須項目をご入力ください。' }, 400);

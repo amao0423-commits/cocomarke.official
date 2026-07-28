@@ -40,9 +40,13 @@ export const POST: APIRoute = async ({ request }) => {
   // 氏名・フリガナにURL（http/www）は通常あり得ない＝botの典型
   const nameHasUrl = /https?:\/\/|www\./i.test(`${name} ${furigana}`);
 
+  // フリガナに英字が含まれる＝日本語フォームでは通常あり得ない（botのランダム英字）
+  const furiganaHasLatin = /[A-Za-z]/.test(furigana);
   const spamReason =
     honeypot !== '' ? 'honeypot'
-    : (elapsed !== null && elapsed < 2500) ? 'too_fast'
+    : elapsed === null ? 'no_ts'                 // JSトークン無し＝直POST bot
+    : (elapsed < 2500) ? 'too_fast'
+    : furiganaHasLatin ? 'furigana_latin'        // フリガナが英字ガベージ
     : msgUrlCount >= 3 ? 'url_flood'
     : hasLinkMarkup ? 'link_markup'
     : nameHasUrl ? 'url_in_name'

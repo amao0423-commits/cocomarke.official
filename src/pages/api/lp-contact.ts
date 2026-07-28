@@ -37,7 +37,8 @@ export const POST: APIRoute = async ({ request }) => {
   const hasLinkMarkup = /\[url|\[\/url\]|\[link|<a\s|href\s*=/i.test(`${message} ${company}`);
   const nameHasUrl = /https?:\/\/|www\./i.test(String(name));
   const spamReason =
-    (elapsed !== null && elapsed < 2500) ? 'too_fast'
+    elapsed === null ? 'no_ts'                   // JSトークン無し＝直POST bot
+    : (elapsed < 2500) ? 'too_fast'
     : msgUrlCount >= 3 ? 'url_flood'
     : hasLinkMarkup ? 'link_markup'
     : nameHasUrl ? 'url_in_name'

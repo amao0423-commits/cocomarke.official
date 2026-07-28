@@ -1017,10 +1017,16 @@ p{margin:0}ul{margin:0;padding:0;list-style:none}
       btn.textContent='コピーできませんでした'; setTimeout(function(){btn.textContent='内容をコピー';},1800);
     });
   });
-  /* 選んだオプションをフォームのチェックに引き継ぐ */
+  /* 選んだオプションをフォームのチェック＋相談内容欄に引き継ぐ */
   document.getElementById('toForm').addEventListener('click',function(){
     var p=picked();
     document.querySelectorAll('#formOpts input').forEach(function(i){ i.checked = p.indexOf(i.value)>-1; });
+    var ta=document.getElementById('f-msg');
+    if(ta){
+      ta.value='【ご相談内容】\n・アカウント上位表示（月額30,000円〜／税別）'
+        + (p.length ? '\n'+p.map(function(x){return '・'+x+'（数量は要相談）';}).join('\n') : '');
+      ta.dispatchEvent(new Event('input'));
+    }
   });
 })();
 

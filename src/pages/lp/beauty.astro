@@ -1,0 +1,13 @@
+---
+import lpHtml from '../../../templates/lp/beauty/index.html?raw';
+import { injectGtm } from '../../lib/gtm';
+
+// 美容サロン向けの広告着地用LP。HP本体からはリンクせず、noindex（テンプレのhead）で
+// 検索にも出さない独立ページ。ヘッダー/フッターは表示しない（CVに集中）。
+// injectGtm で Meta Pixel(base) + GTM を <head> に注入する。
+const html = injectGtm(lpHtml);
+
+return new Response(html, {
+  headers: { 'Content-Type': 'text/html; charset=utf-8' },
+});
+---

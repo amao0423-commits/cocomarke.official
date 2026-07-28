@@ -187,6 +187,15 @@ p{margin:0}ul{margin:0;padding:0;list-style:none}
 .svc__fig{background:var(--paper-2);padding:18px;display:grid;place-items:center}
 .svc__fig img{border-radius:10px}
 .svc__cta{margin-top:auto;width:100%;padding:13px 20px;font-size:13.5px}
+.lkx{grid-column:1/-1;background:var(--paper-2);border:1px solid var(--line);border-radius:18px;padding:26px 30px 24px;margin-top:4px}
+.lkx__h{font-family:var(--f-body);font-size:16px;font-weight:700;color:var(--ink);padding-left:12px;border-left:4px solid var(--brass);line-height:1.5;margin:0 0 16px}
+.lkx__ul{list-style:none;margin:0 0 20px;padding:0;display:grid;gap:10px}
+.lkx__ul li{position:relative;padding-left:22px;font-size:14px;line-height:1.85;color:var(--ink-2)}
+.lkx__ul li::before{content:"";position:absolute;left:2px;top:.72em;width:11px;height:2px;background:var(--brass);border-radius:2px}
+.lkx__lb{display:block;font-size:13px;color:var(--muted);letter-spacing:.08em;margin:0 0 12px}
+.lkx__chips{display:flex;flex-wrap:wrap;gap:9px}
+.lkx__chips span{background:var(--white);border:1px solid var(--line);border-radius:999px;padding:7px 15px;font-size:12.5px;color:var(--ink)}
+.lkx__note{margin:18px 0 0;font-size:12px;color:var(--muted);line-height:1.7}
 
 /* 反応の付与モック */
 .rmock{width:100%;max-width:252px;background:#fff;border:1px solid rgba(12,43,37,.12);border-radius:12px;overflow:hidden}
@@ -592,6 +601,16 @@ p{margin:0}ul{margin:0;padding:0;list-style:none}
             <li>実施の可否・表現は各プラットフォームの規約と関連法令をふまえてご相談のうえ決定します</li>
           </ul>
         </div>
+      </div>
+      <div class="lkx rv">
+        <h4 class="lkx__h">どんな人にいいねしに行くか</h4>
+        <ul class="lkx__ul">
+          <li>ターゲットになり得る人が、よく使うハッシュタグで投稿していた人</li>
+          <li>お手本にしているアカウントや、類似アカウントにいいねしている人　など</li>
+        </ul>
+        <span class="lkx__lb">ハッシュタグ例</span>
+        <div class="lkx__chips"><span>#髪質改善</span><span>#縮毛矯正</span><span>#表参道美容室</span><span>#まつげパーマ</span><span>#ニュアンスネイル</span><span>#毛穴ケア</span><span>#眉毛サロン</span><span>#骨盤矯正</span></div>
+        <p class="lkx__note">※ハッシュタグは商圏・業種に合わせて選定します。</p>
       </div>
     </div>
   </div>

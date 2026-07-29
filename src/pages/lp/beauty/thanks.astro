@@ -1,0 +1,13 @@
+---
+import lpHtml from '../../../../templates/lp/beauty/thanks.html?raw';
+import { injectGtm } from '../../../lib/gtm';
+
+// 美容サロン向け広告LP（/lp/beauty）の見積り送信後サンクスページ。
+// injectGtm で GTM + Meta Pixel(base) を注入。ページ内で Lead を発火する（本文の script）。
+// noindex（テンプレのhead）。HP本体からはリンクしない独立ページ。
+const html = injectGtm(lpHtml);
+
+return new Response(html, {
+  headers: { 'Content-Type': 'text/html; charset=utf-8' },
+});
+---

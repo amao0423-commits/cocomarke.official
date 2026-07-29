@@ -1098,10 +1098,12 @@ var VOICES = [{"ind":"まつげ","key":"eyelash","kw":"まつげエクステ","a
     });
     data.plan='アカウント上位表示（月額30,000円〜／税別）';
     data._ts=String(_loadTs);
+    data.event_id=(function(){try{if(window.crypto&&crypto.randomUUID)return crypto.randomUUID();}catch(e){}return 'e'+Date.now().toString(36)+Math.random().toString(36).slice(2);})();
     var btn=form.querySelector('button[type=submit]'); btn.disabled=true; btn.textContent='送信中…';
     fetch(ENDPOINT,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)})
-      .then(function(r){ if(!r.ok) throw new Error(); 
-        form.reset(); show('ok','送信しました。担当より土日祝を除く営業日に順次ご連絡いたします。'); })
+      .then(function(r){ if(!r.ok) throw new Error();
+        try{ sessionStorage.setItem('beauty_eid', data.event_id); }catch(e){}
+        window.location.href='/lp/beauty/thanks'; })
       .catch(function(){ show('ng','送信に失敗しました。お手数ですが公式サイトのお問い合わせフォームよりご連絡ください。'); })
       .finally(function(){ btn.disabled=false; btn.textContent='この内容で見積もりを依頼する'; });
   });

@@ -14,6 +14,18 @@ const GTM_BODY = `<!-- Google Tag Manager (noscript) -->
 height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 <!-- End Google Tag Manager (noscript) -->`;
 
+// モバイルメニュー: オーバーレイ内リンク（サービス等の同一ページ内アンカー）をタップしても
+// オーバーレイが閉じず、全画面のまま被さって「無反応」に見える → 連打(イライラクリック)の原因。
+// リンクタップ時に即クローズして、スクロール先がすぐ見えるようにする。全ページ共通で注入。
+const MENU_LINK_CLOSE = `<script>(function(){
+var o=document.querySelector('header div.fixed');
+if(!o)return;
+o.addEventListener('click',function(e){
+  var t=e.target,a=(t&&t.closest)?t.closest('a'):null;
+  if(a&&o.contains(a)){o.style.opacity='0';o.style.pointerEvents='none';}
+},true);
+})();</script>`;
+
 const META_PIXEL_HEAD = `<!-- Meta Pixel Code -->
 <script>
 !function(f,b,e,v,n,t,s)
@@ -110,6 +122,11 @@ export function injectGtm(html: string) {
     result = result.includes('</head>')
       ? result.replace('</head>', `${META_PIXEL_HEAD}</head>`)
       : result;
+  }
+
+  // モバイルメニューのリンクタップで即クローズ（ヘッダーの開閉オーバーレイがある場合のみ）
+  if (result.includes('aria-label="Toggle menu"') && result.includes('</body>')) {
+    result = result.replace('</body>', `${MENU_LINK_CLOSE}</body>`);
   }
 
   return result;

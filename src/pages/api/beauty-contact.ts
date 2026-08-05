@@ -1,6 +1,7 @@
 import type { APIRoute } from 'astro';
 import { Resend } from 'resend';
 import { sendMetaLead } from '../../lib/metaCapi';
+import { disasterNoticeDiv } from '../../lib/disasterNotice';
 
 // 美容サロン向け広告LP（/lp/beauty）専用のお問い合わせ受付。
 // フォーム: templates/lp/beauty/index.html（ENDPOINT = /api/beauty-contact）
@@ -132,6 +133,7 @@ export const POST: APIRoute = async ({ request }) => {
         <p>担当より、初回のご連絡は土日祝を除く営業日に順次お送りいたします。<br>
         しばらくお待ちくださいませ。</p>
         <p style="color:#5C6F69;font-size:12px">※本メールは自動送信です。ご返信の必要がある場合は、このメールへそのままご返信ください。</p>
+        ${disasterNoticeDiv()}
         <hr style="border:none;border-top:1px solid #E0E7DF;margin:22px 0">
         <p style="font-size:12px;color:#5C6F69">
           COCOマーケ（株式会社ホットセラー）<br>

@@ -1,6 +1,7 @@
 import type { APIRoute } from 'astro';
 import { Resend } from 'resend';
 import { sendMetaLead } from '../../lib/metaCapi';
+import { disasterNoticeRow } from '../../lib/disasterNotice';
 
 const INQUIRY_TYPE_MAP: Record<string, string> = {
   service: 'サービスについて',
@@ -193,6 +194,8 @@ export const POST: APIRoute = async ({ request }) => {
             </table>
           </td>
         </tr>
+
+        ${disasterNoticeRow()}
 
         <!-- フッター（白背景・黒文字・リンクなし） -->
         <tr>

@@ -425,10 +425,11 @@ p{margin:0}ul{margin:0;padding:0;list-style:none}
 .midcta__h{font-family:var(--f-disp);font-weight:800;font-size:clamp(20px,3.4vw,27px);line-height:1.55;margin:0 0 10px}
 .midcta__sub{font-size:13.5px;color:rgba(255,255,255,.78);margin:0 0 24px;line-height:1.8}
 .midcta__chips{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;margin:0 0 26px}
-.midcta__chips a{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.3);color:#fff;border-radius:999px;padding:11px 18px;font-size:13.5px;font-weight:600;text-decoration:none;transition:background .2s,color .2s}
-.midcta__chips a:hover{background:#fff;color:var(--ink)}
+.midcta__chips button{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.3);color:#fff;border-radius:999px;padding:11px 18px;font-size:13.5px;font-weight:600;cursor:pointer;font-family:inherit;transition:background .2s,color .2s,border-color .2s}
+.midcta__chips button:hover{background:rgba(255,255,255,.18)}
+.midcta__chips button.on{background:#fff;color:var(--ink);border-color:#fff}
 .midcta__btn{min-width:280px}
-@media(max-width:640px){.midcta .wrap{padding-top:44px;padding-bottom:44px}.midcta__chips a{font-size:12.5px;padding:10px 15px}.midcta__btn{width:100%;min-width:0}}
+@media(max-width:640px){.midcta .wrap{padding-top:44px;padding-bottom:44px}.midcta__chips button{font-size:12.5px;padding:10px 15px}.midcta__btn{width:100%;min-width:0}}
 
 /* ===== モバイル：横スワイプ・カルーセル & 余白圧縮 ===== */
 .cnav,.chint{display:none}
@@ -654,13 +655,13 @@ p{margin:0}ul{margin:0;padding:0;list-style:none}
   <div class="wrap midcta__in">
     <span class="midcta__lb">CONSULT</span>
     <h2 class="midcta__h">気になる項目を選ぶだけで、<br>そのまま無料相談できます</h2>
-    <p class="midcta__sub">近いお悩みを選ぶと、相談フォームの「ご相談内容」にそのまま反映されます。入力の手間なく、そのままご相談いただけます。</p>
+    <p class="midcta__sub">気になる項目を選んで（複数選択できます）、「無料で相談する」を押してください。選んだ内容が相談フォームの「ご相談内容」にまとめて反映されます。</p>
     <div class="midcta__chips">
-      <a href="#contact" data-msg="検索結果で上位に表示されるようにしたいです。">検索で上位に出したい</a>
-      <a href="#contact" data-msg="フォロワーやリーチが思うように伸びず悩んでいます。">フォロワー・リーチが伸びない</a>
-      <a href="#contact" data-msg="投稿の企画・制作を任せたいです。">投稿制作を任せたい</a>
-      <a href="#contact" data-msg="いいね・コメントなどの反応を増やしたいです。">反応（いいね等）を増やしたい</a>
-      <a href="#contact" data-msg="何から始めればよいか相談したいです。">何から始めるか相談したい</a>
+      <button type="button" data-msg="検索結果で上位に表示されるようにしたいです。">検索で上位に出したい</button>
+      <button type="button" data-msg="フォロワーやリーチが思うように伸びず悩んでいます。">フォロワー・リーチが伸びない</button>
+      <button type="button" data-msg="投稿の企画・制作を任せたいです。">投稿制作を任せたい</button>
+      <button type="button" data-msg="いいね・コメントなどの反応を増やしたいです。">反応（いいね等）を増やしたい</button>
+      <button type="button" data-msg="何から始めればよいか相談したいです。">何から始めるか相談したい</button>
     </div>
     <a href="#contact" class="btn btn--brass btn--lg midcta__btn">無料で相談する</a>
   </div>
@@ -1188,12 +1189,24 @@ var VOICES = [{"ind":"まつげ","key":"eyelash","kw":"まつげエクステ","a
 
 /* ---------- 中間CTA：お悩みチップ → 相談フォームへ反映 ---------- */
 (function(){
-  document.querySelectorAll('.midcta__chips a[data-msg]').forEach(function(a){
-    a.addEventListener('click',function(){
-      var ta=document.getElementById('f-msg');
-      if(ta){ ta.value=this.getAttribute('data-msg'); ta.dispatchEvent(new Event('input')); }
+  var chips=[].slice.call(document.querySelectorAll('.midcta__chips button[data-msg]'));
+  if(!chips.length) return;
+  chips.forEach(function(b){
+    b.setAttribute('aria-pressed','false');
+    b.addEventListener('click',function(){
+      var on=b.classList.toggle('on');
+      b.setAttribute('aria-pressed', on?'true':'false');
     });
   });
+  var btn=document.querySelector('.midcta__btn');
+  if(btn){
+    btn.addEventListener('click',function(){
+      var sel=chips.filter(function(b){return b.classList.contains('on');}).map(function(b){return b.getAttribute('data-msg');});
+      if(!sel.length) return;
+      var ta=document.getElementById('f-msg');
+      if(ta){ ta.value='【ご相談内容】\n'+sel.map(function(m){return '・'+m;}).join('\n'); ta.dispatchEvent(new Event('input')); }
+    });
+  }
 })();
 
 /* ---------- モバイル横スワイプ：ドット＋カウンタ＋スワイプヒント ---------- */

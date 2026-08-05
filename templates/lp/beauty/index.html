@@ -416,6 +416,19 @@ p{margin:0}ul{margin:0;padding:0;list-style:none}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition-duration:.01ms!important}
   .rv{opacity:1;transform:none}html{scroll-behavior:auto}}
 :focus-visible{outline:2.5px solid var(--brass);outline-offset:3px;border-radius:4px}
+
+/* 中間CTA（お悩みチップ→相談フォーム反映） */
+.midcta{background:var(--ink);color:#fff}
+.midcta .wrap{padding-top:56px;padding-bottom:56px}
+.midcta__in{max-width:760px;margin:0 auto;text-align:center}
+.midcta__lb{display:inline-block;font-size:12px;letter-spacing:.18em;color:var(--brass-lt);font-weight:700;margin-bottom:12px}
+.midcta__h{font-family:var(--f-disp);font-weight:800;font-size:clamp(20px,3.4vw,27px);line-height:1.55;margin:0 0 10px}
+.midcta__sub{font-size:13.5px;color:rgba(255,255,255,.78);margin:0 0 24px;line-height:1.8}
+.midcta__chips{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;margin:0 0 26px}
+.midcta__chips a{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.3);color:#fff;border-radius:999px;padding:11px 18px;font-size:13.5px;font-weight:600;text-decoration:none;transition:background .2s,color .2s}
+.midcta__chips a:hover{background:#fff;color:var(--ink)}
+.midcta__btn{min-width:280px}
+@media(max-width:640px){.midcta .wrap{padding-top:44px;padding-bottom:44px}.midcta__chips a{font-size:12.5px;padding:10px 15px}.midcta__btn{width:100%;min-width:0}}
 </style>
 </head>
 <body>
@@ -611,6 +624,23 @@ p{margin:0}ul{margin:0;padding:0;list-style:none}
 </section>
 
 <!-- 4. 投稿例 -->
+<!-- 中間CTA：お悩みチップ → 相談フォームへ反映 -->
+<section class="midcta rv">
+  <div class="wrap midcta__in">
+    <span class="midcta__lb">CONSULT</span>
+    <h2 class="midcta__h">気になる項目を選ぶだけで、<br>そのまま無料相談できます</h2>
+    <p class="midcta__sub">近いお悩みを選ぶと、相談フォームの「ご相談内容」にそのまま反映されます。入力の手間なく、そのままご相談いただけます。</p>
+    <div class="midcta__chips">
+      <a href="#contact" data-msg="検索結果で上位に表示されるようにしたいです。">検索で上位に出したい</a>
+      <a href="#contact" data-msg="フォロワーやリーチが思うように伸びず悩んでいます。">フォロワー・リーチが伸びない</a>
+      <a href="#contact" data-msg="投稿の企画・制作を任せたいです。">投稿制作を任せたい</a>
+      <a href="#contact" data-msg="いいね・コメントなどの反応を増やしたいです。">反応（いいね等）を増やしたい</a>
+      <a href="#contact" data-msg="何から始めればよいか相談したいです。">何から始めるか相談したい</a>
+    </div>
+    <a href="#contact" class="btn btn--brass btn--lg midcta__btn">無料で相談する</a>
+  </div>
+</section>
+
 <section class="sec sec--tint" id="format">
   <div class="wrap">
     <div class="rv">
@@ -1105,6 +1135,44 @@ var VOICES = [{"ind":"まつげ","key":"eyelash","kw":"まつげエクステ","a
         window.location.href='/lp/beauty/thanks'; })
       .catch(function(){ show('ng','送信に失敗しました。お手数ですが公式サイトのお問い合わせフォームよりご連絡ください。'); })
       .finally(function(){ btn.disabled=false; btn.textContent='無料で相談する'; });
+  });
+})();
+
+/* ---------- アンカー：遅延画像のズレに追従する堅牢スムーススクロール ---------- */
+(function(){
+  var HDR=76;
+  var reduce=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  function targetY(el){ return Math.max(0, el.getBoundingClientRect().top + window.pageYOffset - HDR); }
+  function go(el){
+    if(reduce){ window.scrollTo(0, targetY(el)); return; }
+    var from=window.pageYOffset, t0=null, dur=560;
+    requestAnimationFrame(function step(t){
+      if(!t0) t0=t;
+      var p=Math.min((t-t0)/dur,1), e=1-Math.pow(1-p,3);
+      window.scrollTo(0, from + (targetY(el)-from)*e);
+      if(p<1) requestAnimationFrame(step); else window.scrollTo(0, targetY(el));
+    });
+  }
+  document.addEventListener('click',function(ev){
+    var a=ev.target && ev.target.closest ? ev.target.closest('a[href^="#"]') : null;
+    if(!a) return;
+    var hash=a.getAttribute('href');
+    if(!hash || hash.length<2) return;
+    var el; try{ el=document.querySelector(hash); }catch(e){ return; }
+    if(!el) return;
+    ev.preventDefault();
+    if(history.replaceState) history.replaceState(null,'',hash);
+    go(el);
+  });
+})();
+
+/* ---------- 中間CTA：お悩みチップ → 相談フォームへ反映 ---------- */
+(function(){
+  document.querySelectorAll('.midcta__chips a[data-msg]').forEach(function(a){
+    a.addEventListener('click',function(){
+      var ta=document.getElementById('f-msg');
+      if(ta){ ta.value=this.getAttribute('data-msg'); ta.dispatchEvent(new Event('input')); }
+    });
   });
 })();
 </script>

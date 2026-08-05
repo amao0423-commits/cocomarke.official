@@ -429,6 +429,31 @@ p{margin:0}ul{margin:0;padding:0;list-style:none}
 .midcta__chips a:hover{background:#fff;color:var(--ink)}
 .midcta__btn{min-width:280px}
 @media(max-width:640px){.midcta .wrap{padding-top:44px;padding-bottom:44px}.midcta__chips a{font-size:12.5px;padding:10px 15px}.midcta__btn{width:100%;min-width:0}}
+
+/* ===== モバイル：横スワイプ・カルーセル & 余白圧縮 ===== */
+.cnav,.chint{display:none}
+@keyframes swipehint{0%,100%{transform:translateX(0)}25%{transform:translateX(-8px)}75%{transform:translateX(8px)}}
+@media(max-width:768px){
+  .sec{padding:56px 0}
+  .fin{padding:56px 0}
+  .fmt{display:flex;grid-template-columns:none;flex-wrap:nowrap;overflow-x:auto;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;gap:12px;margin-top:26px;scrollbar-width:none}
+  .fmt::-webkit-scrollbar{display:none}
+  .fmt>.fmt__c{flex:0 0 80%;scroll-snap-align:center;opacity:1;transform:none}
+  .vfil{flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;margin:24px 0 14px;padding-bottom:2px}
+  .vfil::-webkit-scrollbar{display:none}
+  .vfil button{flex:0 0 auto;white-space:nowrap}
+  .vgrid{columns:auto;display:flex;flex-wrap:nowrap;overflow-x:auto;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;gap:12px;scrollbar-width:none}
+  .vgrid::-webkit-scrollbar{display:none}
+  .vgrid>.vcard{flex:0 0 80%;scroll-snap-align:center;margin-bottom:0}
+  .vmore{display:none}
+  .chint{display:block;text-align:center;margin:12px auto 0;font-size:12px;color:var(--muted);font-weight:600;animation:swipehint 1.05s ease-in-out 3;transition:opacity .3s}
+  .chint.is-hide{opacity:0}
+  .cnav{display:flex;align-items:center;justify-content:center;gap:12px;margin-top:14px}
+  .cdots{display:flex;align-items:center;gap:6px}
+  .cdots i{width:7px;height:7px;border-radius:999px;background:var(--line);transition:width .25s,background .25s;flex:0 0 auto}
+  .cdots i.on{width:20px;background:var(--brass)}
+  .ccount{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+}
 </style>
 </head>
 <body>
@@ -775,14 +800,8 @@ p{margin:0}ul{margin:0;padding:0;list-style:none}
   <div class="wrap">
     <div class="rv">
       <div class="eyebrow">Voice</div>
-      <h2 class="h2">ご利用中のサロン様の声</h2>
+      <h2 class="h2">ご利用中のお客様の声</h2>
       <p class="lead">美容室・エステ・ネイル・まつげ・アートメイク・クリニックなど、美容分野を中心にご依頼いただいています。</p>
-    </div>
-    <div class="vstat rv">
-      <div class="vstat__i"><div class="vstat__n">100<span>件+</span></div><div class="vstat__l">お客様の声</div></div>
-      <div class="vstat__i"><div class="vstat__n">8<span>分野</span></div><div class="vstat__l">対応業種</div></div>
-      <div class="vstat__i"><div class="vstat__n">1<span>か月〜</span></div><div class="vstat__l">最短のご契約期間</div></div>
-      <div class="vstat__i"><div class="vstat__n">0<span>円</span></div><div class="vstat__l">初期費用・解約手数料</div></div>
     </div>
     <div class="vfil" id="vfil"></div>
     <div class="vgrid" id="vgrid"></div>
@@ -1094,7 +1113,7 @@ var VOICES = [{"ind":"まつげ","key":"eyelash","kw":"まつげエクステ","a
   });
   function filtered(){ return cur==='all'?VOICES:VOICES.filter(function(v){return v.ind===cur;}); }
   function render(){
-    grid.innerHTML=filtered().slice(0,shown).map(function(v){
+    grid.innerHTML=(window.matchMedia('(max-width:768px)').matches?filtered():filtered().slice(0,shown)).map(function(v){
       return '<article class="vcard"><div class="vcard__h"><span class="vcard__av">'+v.ind.charAt(0)+'</span>'+
         '<span><span class="vcard__kw">'+v.kw+'</span><br><span class="vcard__who">'+v.who+'</span></span></div>'+
         '<p class="vcard__b">'+v.body+'</p></article>';
@@ -1104,6 +1123,7 @@ var VOICES = [{"ind":"まつげ","key":"eyelash","kw":"まつげエクステ","a
     more.textContent='もっと見る（あと'+rest+'件）';
   }
   more.addEventListener('click',function(){shown+=STEP;render();});
+  var _rt;window.addEventListener('resize',function(){clearTimeout(_rt);_rt=setTimeout(render,200);});
   render();
 })();
 
@@ -1174,6 +1194,44 @@ var VOICES = [{"ind":"まつげ","key":"eyelash","kw":"まつげエクステ","a
       if(ta){ ta.value=this.getAttribute('data-msg'); ta.dispatchEvent(new Event('input')); }
     });
   });
+})();
+
+/* ---------- モバイル横スワイプ：ドット＋カウンタ＋スワイプヒント ---------- */
+(function(){
+  function initCarousel(scroll){
+    if(!scroll || scroll._cinit) return; scroll._cinit=1;
+    var hint=document.createElement('div'); hint.className='chint'; hint.textContent='\u2190 \u6a2a\u306b\u30b9\u30ef\u30a4\u30d7\u3067\u304d\u307e\u3059 \u2192';
+    var nav=document.createElement('div'); nav.className='cnav';
+    var dots=document.createElement('div'); dots.className='cdots';
+    var count=document.createElement('div'); count.className='ccount';
+    nav.appendChild(dots); nav.appendChild(count);
+    scroll.insertAdjacentElement('afterend', nav);
+    scroll.insertAdjacentElement('afterend', hint);
+    function activeIndex(){
+      var kids=scroll.children; if(!kids.length) return 0;
+      var cx=scroll.scrollLeft + scroll.clientWidth/2, i;
+      for(i=0;i<kids.length;i++){ var el=kids[i]; if(el.offsetLeft<=cx && el.offsetLeft+el.offsetWidth>cx) return i; }
+      return kids.length-1;
+    }
+    function update(){
+      var n=scroll.children.length, a=activeIndex(), ds=dots.children, i;
+      for(i=0;i<ds.length;i++) ds[i].className=(i===a?'on':'');
+      count.textContent=(n?a+1:0)+' / '+n;
+    }
+    function build(){
+      var n=scroll.children.length; dots.innerHTML='';
+      if(n>1 && n<=12){ for(var i=0;i<n;i++) dots.appendChild(document.createElement('i')); }
+      update();
+    }
+    var raf; scroll.addEventListener('scroll',function(){ if(raf)cancelAnimationFrame(raf); raf=requestAnimationFrame(update); },{passive:true});
+    var hid=false; function hideHint(){ if(hid)return; hid=true; hint.classList.add('is-hide'); }
+    scroll.addEventListener('touchstart',hideHint,{passive:true});
+    scroll.addEventListener('scroll',hideHint,{passive:true});
+    scroll._rebuild=build; build();
+  }
+  var fmt=document.querySelector('.fmt'); if(fmt) initCarousel(fmt);
+  var vg=document.getElementById('vgrid');
+  if(vg){ initCarousel(vg); new MutationObserver(function(){ if(vg._rebuild) vg._rebuild(); }).observe(vg,{childList:true}); }
 })();
 </script>
 </body>

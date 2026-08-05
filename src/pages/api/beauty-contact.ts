@@ -70,7 +70,7 @@ export const POST: APIRoute = async ({ request }) => {
   }
   // ------------------------------------------------------------------------
 
-  if (!name || !account || !email) {
+  if (!name || !email || !message) {
     return json({ success: false, error: '必須項目をご入力ください。' }, 400);
   }
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {

@@ -1229,7 +1229,28 @@ var VOICES = [{"ind":"まつげ","key":"eyelash","kw":"まつげエクステ","a
     scroll.addEventListener('scroll',hideHint,{passive:true});
     scroll._rebuild=build; build();
   }
-  var fmt=document.querySelector('.fmt'); if(fmt) initCarousel(fmt);
+  function autoplay(scroll){
+    if(!scroll) return;
+    if(window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    var mq=window.matchMedia('(max-width:768px)');
+    var userPause=false, idle=null, visible=false;
+    function advance(){
+      if(userPause || !visible || !mq.matches) return;
+      var kids=scroll.children; if(kids.length<2) return;
+      var cx=scroll.scrollLeft + scroll.clientWidth/2, i, cur=0;
+      for(i=0;i<kids.length;i++){ var el=kids[i]; if(el.offsetLeft<=cx && el.offsetLeft+el.offsetWidth>cx){cur=i;break;} }
+      var atEnd = scroll.scrollLeft + scroll.clientWidth >= scroll.scrollWidth - 4;
+      if(atEnd || cur>=kids.length-1){ scroll.scrollTo({left:0,behavior:'smooth'}); return; }
+      var t=kids[cur+1];
+      scroll.scrollTo({left:Math.max(0,t.offsetLeft-(scroll.clientWidth-t.clientWidth)/2),behavior:'smooth'});
+    }
+    setInterval(advance,3200);
+    function pause(){ userPause=true; clearTimeout(idle); idle=setTimeout(function(){userPause=false;},4500); }
+    scroll.addEventListener('touchstart',pause,{passive:true});
+    scroll.addEventListener('pointerdown',pause,{passive:true});
+    new IntersectionObserver(function(en){ en.forEach(function(e){ visible=e.isIntersecting; }); },{threshold:.4}).observe(scroll);
+  }
+  var fmt=document.querySelector('.fmt'); if(fmt){ initCarousel(fmt); autoplay(fmt); }
   var vg=document.getElementById('vgrid');
   if(vg){ initCarousel(vg); new MutationObserver(function(){ if(vg._rebuild) vg._rebuild(); }).observe(vg,{childList:true}); }
 })();

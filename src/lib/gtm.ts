@@ -78,9 +78,9 @@ function injectNewsNav(html: string) {
 const FLOATING_LINE_RE = /<a target="_blank" rel="noopener noreferrer" aria-label="LINEで相談" class="fixed bottom-6 right-6 z-50[\s\S]*?<\/a>/;
 
 const FLOATING_CTA = `<div class="fixed bottom-6 right-6 z-50 flex flex-col items-center cm-float">
-<a href="https://www.cocomake-guide.com/analysis?utm_source=cocomarke&utm_medium=floating&utm_campaign=site&utm_content=diagnosis" aria-label="アカウント無料診断" class="cm-float__a">
-<span class="cm-float__circle" style="background-color:#FFEA00"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#9a7e00" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"></path><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg></span>
-<span class="cm-float__label" style="background:#FFF7C2;color:#7a6400">無料診断</span>
+<a href="https://www.cocomake-guide.com/" target="_blank" rel="noopener noreferrer" aria-label="資料ダウンロード" class="cm-float__a">
+<span class="cm-float__circle" style="background-color:#FFEA00"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#9a7e00" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><path d="M7 10l5 5 5-5"></path><path d="M12 15V3"></path></svg></span>
+<span class="cm-float__label" style="background:#FFF7C2;color:#7a6400">資料ダウンロード</span>
 </a>
 <a href="https://page.line.me/386gtsnr?oat_content=url&openQrModal=true" target="_blank" rel="noopener noreferrer" aria-label="LINEで相談" class="cm-float__a">
 <span class="cm-float__circle cm-float__line"><img src="/images/line-logo.png" alt="LINE" class="cm-float__lineimg" loading="lazy"></span>

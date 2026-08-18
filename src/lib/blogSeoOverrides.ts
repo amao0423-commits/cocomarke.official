@@ -7,6 +7,19 @@ export type SeoOverride = {
 };
 
 export const SEO_OVERRIDES: Record<string, SeoOverride> = {
+  'instagram-recommendations-criteria-2026': {
+    title: 'インスタの「おすすめ」に出てくる人の基準とは？公式情報でわかる仕組みと、消す・載る対策法【2026年最新】',
+    description: 'インスタのおすすめに出てくる人の基準を、Metaの公式発表をもとに解説。共通フォロワー・連絡先同期・興味シグナルなど7つの判定材料、「相手にもバレるのか」の答え、おすすめを消す／リセットする手順、逆に発見タブに載るための2026年の条件までまとめました。',
+    lead: 'Instagramの「おすすめ」に知り合いや無関係な人が出てくる基準は、Meta公式ブログ・ヘルプセンター・Adam Mosseriの発言という一次情報で説明されています。この記事では7つの判定基準を分解し、他人のおすすめを消す方法、自分がおすすめに出ないようにする方法、逆に自社アカウントをおすすめ・発見タブに載せる方法まで解説します。',
+    faqs: [],
+    relatedLinks: [
+      { href: '/blog/instagram-algorithm-update-latest/', label: 'インスタ アルゴリズムの最新動向と運用への影響' },
+      { href: '/blog/instagram-search-discover-optimization/', label: 'インスタの検索で見つけてもらう方法' },
+      { href: '/blog/instagram-search-ranking-strategy/', label: 'Instagram検索×おすすめタブで集客最大化する戦略' },
+      { href: '/blog/instagram-insights-guide-2025/', label: 'Instagramインサイトの見方と活用法' },
+    ],
+  },
+
   'instagram-mention-how-to': {
     title: 'インスタのメンションとは？通知・やり方・タグ付けとの違い',
     description: 'Instagramのメンション機能の使い方・やり方を解説。タグ付けとの違い、通知が届かない原因、ストーリーでのメンション方法など疑問をまとめました。',

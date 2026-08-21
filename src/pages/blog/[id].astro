@@ -106,7 +106,7 @@ if (updatedSource) {
   if (updatedDate !== date) {
     html = html.replace(
       '<!--UPDATED_DATE_SLOT-->',
-      `<time class="text-sm font-bold font-en leading-[1.6] text-[#666] ml-2">更新日：${updatedDate}</time>`
+      `<time class="text-xs font-bold font-en leading-[1.4] text-[#666]">更新日：${updatedDate}</time>`
     );
   } else {
     html = html.replace('<!--UPDATED_DATE_SLOT-->', '');

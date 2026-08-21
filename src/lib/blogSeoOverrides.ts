@@ -7,6 +7,18 @@ export type SeoOverride = {
 };
 
 export const SEO_OVERRIDES: Record<string, SeoOverride> = {
+  'instagram-story-highlights-guide-2026': {
+    title: 'ストーリーハイライトの作り方・編集方法完全ガイド｜カバー画像・削除・2026年のタブ化まで解説',
+    description: 'Instagramのストーリーハイライトの作り方・編集・削除方法を公式ヘルプの仕様に基づいて解説。カバー画像のサイズ・作り方、2024年後半から進むプロフィールのタブ化（ハート型アイコン）という2026年の変化、業種別の活用テンプレートまでまとめました。',
+    lead: 'ストーリーハイライトは、24時間で消えるストーリーの中から繰り返し見せたい情報だけを選んでプロフィールに常設する機能です。この記事では作成・編集・削除の手順、カバー画像の作り方、2024年後半から進むプロフィールのタブ化という2026年の変化、業種別の活用テンプレートまで解説します。',
+    faqs: [],
+    relatedLinks: [
+      { href: '/blog/instagram-highlight-update-2025-marketing-strategy/', label: 'インスタハイライトが「丸」に回帰？企業のマーケティング戦略への影響' },
+      { href: '/blog/instagram-archive-close-friends/', label: 'アーカイブと親しい友達リストの使い方' },
+      { href: '/blog/instagram-feed-aesthetic-consistency/', label: 'インスタの世界観の作り方' },
+    ],
+  },
+
   'instagram-recommendations-criteria-2026': {
     title: 'インスタの「おすすめ」に出てくる人の基準とは？公式情報でわかる仕組みと、消す・載る対策法【2026年最新】',
     description: 'インスタのおすすめに出てくる人の基準を、Metaの公式発表をもとに解説。共通フォロワー・連絡先同期・興味シグナルなど7つの判定材料、「相手にもバレるのか」の答え、おすすめを消す／リセットする手順、逆に発見タブに載るための2026年の条件までまとめました。',

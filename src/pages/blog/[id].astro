@@ -98,6 +98,22 @@ html = html.replace(
   '<style>nav ol>li.shrink-0+li{flex-shrink:0}</style></head>'
 );
 html = html.replace('>0000.00.00<', '>' + date + '<');
+// 更新日表示：投稿日と日付（日単位）が異なる場合のみ「更新日：」を追加表示する
+// （リライト等で本当に更新した記事だけに表示し、未更新記事には表示しない）
+const updatedSource = blog.updatedAt;
+if (updatedSource) {
+  const updatedDate = formatDate(updatedSource);
+  if (updatedDate !== date) {
+    html = html.replace(
+      '<!--UPDATED_DATE_SLOT-->',
+      `<time class="text-sm font-bold font-en leading-[1.6] text-[#666] ml-2">更新日：${updatedDate}</time>`
+    );
+  } else {
+    html = html.replace('<!--UPDATED_DATE_SLOT-->', '');
+  }
+} else {
+  html = html.replace('<!--UPDATED_DATE_SLOT-->', '');
+}
 html = html.replace(/(<h1[^>]*>).*?(<\/h1>)/s, '$1' + escapeHtml(blog.title) + '$2' + subTags(blog.title, id ?? ''));
 if (cat) html = html.replaceAll('>ダミーカテゴリ<', '>' + escapeHtml(cat) + '<');
 

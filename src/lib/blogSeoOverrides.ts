@@ -169,7 +169,7 @@ export const SEO_OVERRIDES: Record<string, SeoOverride> = {
     ],
   },
 
-  'instagram-story-highlights-guide-2026': {
+  'short-video-ads-guide': {
     title: 'ショート動画広告（短尺動画広告）とは？売上アップにつなげるポイントも解説',
     description: 'ショート動画広告（短尺動画広告）の概要・TikTok／Instagram Reels／YouTube Shortsの比較・売上アップにつながる5つの制作ポイント・KPI設定まで解説。動画広告を始めたい企業向けの実務ガイドです。',
     lead: 'ショート動画広告とは、15〜60秒の短尺動画を使った広告形式で、TikTok・Instagram Reels・YouTube Shortsなどスマートフォン向けSNSに特化したデジタル広告です。スキップされにくく低コストで始めやすい一方、冒頭3秒の設計とプラットフォーム選定が成果を左右します。この記事は、ショート動画広告を検討している企業のマーケ担当者向けにまとめています。',

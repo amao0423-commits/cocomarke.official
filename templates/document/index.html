@@ -319,6 +319,8 @@
 
   function collectContext(){
     var q = new URLSearchParams(location.search);
+    var src = q.get("src") || "";
+    try{ if(src){ sessionStorage.setItem("coco_dl_src", src); } else { src = sessionStorage.getItem("coco_dl_src") || ""; } }catch(e){}
     return {
       utm_source:   q.get("utm_source")   || "",
       utm_medium:   q.get("utm_medium")   || "",
@@ -328,6 +330,7 @@
       gclid:        q.get("gclid")        || "",
       referrer:     document.referrer     || "",
       landing_page: location.href,
+      entry_source: src,
       submitted_at: new Date().toISOString()
     };
   }

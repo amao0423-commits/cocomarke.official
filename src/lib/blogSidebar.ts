@@ -10,7 +10,7 @@ const DIAGNOSIS_URL = 'https://www.cocomake-guide.com/analysis?utm_source=cocoma
 // サブスク訴求バナー（記事ページに追加）
 const SUBSCRIPTION_URL = 'https://www.cocomake-guide.com/subscription?utm_source=blog&utm_medium=sidebar&utm_campaign=instagram_engagement_article';
 // サービス概要（資料）バナー：自社の資料請求LPへ
-const DOC_URL = '/document/';
+const DOC_URL = '/document/?src=blog';
 const BANNER_DIAGNOSIS = '/images/blog_detail-banner-01.png';
 const BANNER_SUBSCRIPTION = '/images/blog_detail-banner-subscription.png';
 const BANNER_DOC = '/images/blog_detail-banner-02.png'; // ※サービス概要は3枚目に差し替え（同ファイルを上書き）

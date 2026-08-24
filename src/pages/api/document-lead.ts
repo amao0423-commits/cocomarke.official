@@ -19,8 +19,22 @@ export const POST: APIRoute = async ({ request }) => {
   const {
     company = '', name = '', email = '', tel = '', industry = '', timing = '',
     utm_source = '', utm_medium = '', utm_campaign = '', utm_content = '', utm_term = '',
-    gclid = '', referrer = '', landing_page = '', event_id = '',
+    gclid = '', referrer = '', landing_page = '', entry_source = '', event_id = '',
   } = data;
+
+  // フォーム到達経路（各導線の /document/?src=... で識別）
+  const SRC_LABELS: Record<string, string> = {
+    header:  'ヘッダーの「資料ダウンロード」ボタン',
+    hero:    'トップ ファーストビューの資料DLボタン',
+    section: 'トップ 中段の資料DLボタン',
+    bottom:  'トップ 下部の資料DLボタン',
+    float:   '右下フローティングの資料DLボタン',
+    blog:    'ブログ記事サイドバーの資料バナー',
+  };
+  const entrySourceLabel = SRC_LABELS[entry_source] || (entry_source || '不明（直接アクセス・ブックマーク等）');
+
+  // 自動返信メールに載せる資料ダウンロードURL（添付は容量が大きいためリンクで案内）
+  const DOC_PDF_URL = 'https://www.cocomarke.com/dl/cocomarke-service-deck.pdf';
 
   // --- スパム対策 ---------------------------------------------------------
   // contact.ts と同様の考え方。検知したら通知は送らず、静かに success:200 を返す。
@@ -64,10 +78,11 @@ export const POST: APIRoute = async ({ request }) => {
     `■ 業種　　　　　　：${industry}`,
     `■ 検討時期　　　　：${timing}`,
     '',
-    `■ 流入元　　　　　：${landing_page}`,
-    `■ リファラー　　　：${referrer}`,
-    `■ UTM　　　　　　：${[utm_source, utm_medium, utm_campaign, utm_content, utm_term].filter(Boolean).join(' / ')}`,
-    `■ gclid　　　　　 ：${gclid}`,
+    `■ 流入導線　　　　：${entrySourceLabel}`,
+    `■ 直前ページ　　　：${referrer || '（なし）'}`,
+    `■ 着地URL　　　　：${landing_page}`,
+    `■ UTM　　　　　　：${[utm_source, utm_medium, utm_campaign, utm_content, utm_term].filter(Boolean).join(' / ') || '（なし）'}`,
+    `■ gclid　　　　　 ：${gclid || '（なし）'}`,
   ].join('\n');
 
   const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -102,10 +117,18 @@ export const POST: APIRoute = async ({ request }) => {
         <tr>
           <td style="padding:32px 32px 8px;">
             <p style="margin:0 0 8px;font-size:16px;color:#333;">${esc(name)} 様</p>
-            <p style="margin:0 0 24px;font-size:15px;color:#333;line-height:1.8;">
+            <p style="margin:0 0 20px;font-size:15px;color:#333;line-height:1.8;">
               サービス資料のご請求ありがとうございます。<br>
-              以下の内容で受け付けました。資料は送信直後の画面からもご覧いただけます。
+              下記のボタンから資料（PDF）をダウンロードいただけます。以下の内容で受け付けました。
             </p>
+
+            <table width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 24px;">
+              <tr><td align="center" style="padding:4px 0 0;">
+                <a href="${DOC_PDF_URL}" style="display:inline-block;background:#0965f6;color:#ffffff;font-size:16px;font-weight:bold;text-decoration:none;padding:15px 34px;border-radius:9999px;">&#128196; サービス資料をダウンロード（PDF）</a>
+                <p style="margin:12px 0 0;font-size:12px;color:#888;line-height:1.7;">ボタンが開かない場合は下記URLをコピーしてご利用ください：<br>
+                <a href="${DOC_PDF_URL}" style="color:#005bea;word-break:break-all;">${DOC_PDF_URL}</a></p>
+              </td></tr>
+            </table>
 
             <table width="100%" cellpadding="0" cellspacing="0">
               <tr>
@@ -212,7 +235,7 @@ export const POST: APIRoute = async ({ request }) => {
           { type: 'divider' },
           {
             type: 'context',
-            elements: [{ type: 'mrkdwn', text: `返信先: <mailto:${email}|${email}> ／ 流入元: ${landing_page || '—'}` }],
+            elements: [{ type: 'mrkdwn', text: `返信先: <mailto:${email}|${email}> ／ 流入導線: ${entrySourceLabel}` }],
           },
         ],
       };

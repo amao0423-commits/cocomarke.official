@@ -124,7 +124,7 @@ export const POST: APIRoute = async ({ request }) => {
 
             <table width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 24px;">
               <tr><td align="center" style="padding:4px 0 0;">
-                <a href="${DOC_PDF_URL}" style="display:inline-block;background:#0965f6;color:#ffffff;font-size:16px;font-weight:bold;text-decoration:none;padding:15px 34px;border-radius:9999px;">&#128196; サービス資料をダウンロード（PDF）</a>
+                <a href="${DOC_PDF_URL}" style="display:inline-block;background:#0965f6;color:#ffffff;font-size:15px;font-weight:bold;text-decoration:none;padding:11px 26px;border-radius:9999px;white-space:nowrap;">&#128195; ダウンロード（PDF）</a>
                 <p style="margin:12px 0 0;font-size:12px;color:#888;line-height:1.7;">ボタンが開かない場合は下記URLをコピーしてご利用ください：<br>
                 <a href="${DOC_PDF_URL}" style="color:#005bea;word-break:break-all;">${DOC_PDF_URL}</a></p>
               </td></tr>

@@ -62,7 +62,7 @@ function injectNewsNav(html: string) {
   if (DESKTOP_NAV_RE.test(r)) {
     r = r.replace(DESKTOP_NAV_RE, CANONICAL_HEADER_NAV);
   }
-  // 右下フローティングCTA：資料ダウンロードのみに統一（LINE相談は廃止）
+  // 右下フローティングCTA：資料ダウンロード＋LINE相談の2択構成
   if (!r.includes('cm-float')) {
     r = r.replace(FLOATING_LINE_RE, FLOATING_CTA);
   }
@@ -71,22 +71,36 @@ function injectNewsNav(html: string) {
 
 const FLOATING_LINE_RE = /<a target="_blank" rel="noopener noreferrer" aria-label="LINEで相談" class="fixed bottom-6 right-6 z-50[\s\S]*?<\/a>/;
 
-const FLOATING_CTA = `<a href="https://www.cocomake-guide.com/" target="_blank" rel="noopener noreferrer" aria-label="資料ダウンロード" class="fixed bottom-6 right-6 z-50 flex flex-col items-center cm-float">
+const FLOATING_CTA = `<div class="fixed bottom-6 right-6 z-50 flex flex-col items-center cm-float">
+<a href="https://www.cocomake-guide.com/" target="_blank" rel="noopener noreferrer" aria-label="資料ダウンロード" class="cm-float__a">
 <span class="cm-float__circle" style="background-color:#FFEA00"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#9a7e00" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><path d="M7 10l5 5 5-5"></path><path d="M12 15V3"></path></svg></span>
 <span class="cm-float__label" style="background:#FFF7C2;color:#7a6400">資料ダウンロード</span>
+</a>
+<a href="https://page.line.me/386gtsnr?oat_content=url&openQrModal=true" target="_blank" rel="noopener noreferrer" aria-label="LINEで相談" class="cm-float__a">
+<span class="cm-float__circle cm-float__line"><img src="/images/line-logo.png" alt="LINE" class="cm-float__lineimg" loading="lazy"></span>
+<span class="cm-float__label" style="background:#D6F5E0;color:#055f2e">LINE相談</span>
+</a>
+</div>
 <style>
-.cm-float{transition:transform .2s;text-decoration:none}
-.cm-float:hover{transform:scale(1.05)}
-.cm-float__circle{width:64px;height:64px;border-radius:9999px;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(0,0,0,.18);border:10px solid transparent;background-clip:padding-box}
+.cm-float{gap:14px}
+.cm-float__a{display:flex;flex-direction:column;align-items:center;transition:transform .2s;text-decoration:none}
+.cm-float__a:hover{transform:scale(1.05)}
+.cm-float__circle{width:64px;height:64px;border-radius:9999px;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(0,0,0,.18)}
 .cm-float__circle svg{width:32px;height:32px}
+/* 資料ダウンロードもLINEと同様に「透明な縁」を付ける（line-logo.pngの緑が枠の約67%＝外周に透明エッジができるのに合わせ、黄円を内側に縮めて透明ボーダーで背景を透かす） */
+.cm-float__circle:not(.cm-float__line){border:10px solid transparent;background-clip:padding-box}
+/* LINE: ラッパーの縁を透明にし、line-logo.png(緑が枠の約76%)を132%に拡大して余白をクロップ→黄円と同サイズの緑円に */
+.cm-float__line{background:transparent;overflow:hidden}
+.cm-float__lineimg{width:132%;height:132%;object-fit:contain}
 .cm-float__label{margin-top:-6px;padding:2px 8px;border-radius:6px;font-size:10px;font-weight:700;white-space:nowrap;box-shadow:0 1px 3px rgba(0,0,0,.15)}
 @media(min-width:1024px){
-.cm-float__circle{width:90px;height:90px;border-width:15px}
+.cm-float{gap:18px}
+.cm-float__circle{width:90px;height:90px}
 .cm-float__circle svg{width:44px;height:44px}
+.cm-float__circle:not(.cm-float__line){border-width:15px}
 .cm-float__label{font-size:12px;padding:3px 10px;margin-top:-8px}
 }
-</style>
-</a>`;
+</style>`;
 
 export function injectGtm(html: string) {
   let result = injectNewsNav(html);

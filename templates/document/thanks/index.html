@@ -72,27 +72,11 @@
 }
 .tk-btn:hover{transform:translateY(-1px)}
 .tk-btn svg{width:19px;height:19px;stroke:currentColor;stroke-width:2.4;fill:none;stroke-linecap:round;stroke-linejoin:round}
-.tk-btn--dl{background:linear-gradient(135deg,var(--brand-grad-from) 0%,var(--brand-grad-to) 100%);color:#fff;box-shadow:0 5px 16px rgba(9,101,246,.36)}
-.tk-btn--dl:hover{color:#fff;box-shadow:0 8px 22px rgba(9,101,246,.46)}
+.tk-scope a.tk-btn--dl{background:linear-gradient(135deg,var(--brand-grad-from) 0%,var(--brand-grad-to) 100%);color:#fff;box-shadow:0 5px 16px rgba(9,101,246,.36)}
+.tk-scope a.tk-btn--dl:hover{color:#fff;box-shadow:0 8px 22px rgba(9,101,246,.46)}
 .tk-btn--view{background:#fff;color:var(--brand-deep);border:2px solid var(--brand)}
 .tk-btn--view:hover{background:var(--brand-tint);color:var(--brand-deep)}
 .tk-actions__note{font-size:12.5px;color:var(--muted);margin:18px 0 0;line-height:1.75}
-
-/* ---------- inline pdf viewer ---------- */
-.tk-viewer{
-  background:#fff;border:1px solid var(--line);border-radius:var(--radius);
-  box-shadow:var(--shadow);overflow:hidden;margin-bottom:26px;
-}
-.tk-viewer__bar{
-  display:flex;align-items:center;justify-content:space-between;gap:12px;
-  padding:14px 20px;border-bottom:1px solid var(--line);background:#FAFCFE;
-}
-.tk-viewer__bar p{margin:0;font-size:13.5px;font-weight:700;color:var(--ink)}
-.tk-viewer__bar a{font-size:12.5px;font-weight:700}
-.tk-viewer iframe{width:100%;height:620px;border:0;display:block;background:#EEF2F7}
-@media(max-width:700px){
-  .tk-viewer{display:none} /* モバイルは埋め込みビューアが不安定なため、ボタン導線に集約 */
-}
 
 /* ---------- next steps ---------- */
 .tk-next{background:#fff;border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:28px}
@@ -153,15 +137,6 @@
     </p>
   </div>
 
-  <!-- 埋め込みビューア（PC） -->
-  <div class="tk-viewer">
-    <div class="tk-viewer__bar">
-      <p>COCOマーケ サービス資料</p>
-      <a href="#" id="tkOpenNew" target="_blank" rel="noopener">別タブで開く →</a>
-    </div>
-    <iframe id="tkFrame" title="COCOマーケ サービス資料" loading="lazy"></iframe>
-  </div>
-
   <!-- 次のアクション -->
   <div class="tk-next">
     <h2 class="tk-next__ttl">資料と合わせてご活用ください</h2>
@@ -217,15 +192,11 @@
 
   var dlBtn   = document.getElementById("tkDownload");
   var viewBtn = document.getElementById("tkView");
-  var openNew = document.getElementById("tkOpenNew");
-  var frame   = document.getElementById("tkFrame");
   var statusT = document.getElementById("tkStatusTxt");
 
   dlBtn.href = CONFIG.pdfUrl;
   dlBtn.setAttribute("download", CONFIG.pdfName);
   viewBtn.href = CONFIG.pdfUrl;
-  openNew.href = CONFIG.pdfUrl;
-  frame.src = CONFIG.pdfUrl + "#view=FitH";
 
   // フォーム経由かどうか
   var viaForm = false;
@@ -259,8 +230,17 @@
     setTimeout(function(){ document.body.removeChild(a); }, 1500);
   }
 
-  if(CONFIG.autoDownload){
-    setTimeout(triggerDownload, CONFIG.autoDelay);
+  // このページに再訪した場合（3カードのリンクをクリック後に戻る、再読み込み等）に
+  // 自動ダウンロードを繰り返さないよう、セッション内で一度だけに制限する。
+  var AUTO_KEY = "coco_dl_auto_done";
+  var alreadyAuto = false;
+  try{ alreadyAuto = sessionStorage.getItem(AUTO_KEY) === "1"; }catch(e){}
+
+  if(CONFIG.autoDownload && !alreadyAuto){
+    setTimeout(function(){
+      triggerDownload();
+      try{ sessionStorage.setItem(AUTO_KEY, "1"); }catch(e){}
+    }, CONFIG.autoDelay);
   }else{
     statusT.textContent = "資料のご用意ができています";
   }

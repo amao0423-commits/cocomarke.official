@@ -3,6 +3,8 @@ import aboutHtml from '../../templates/about/index.html?raw';
 import contactHtml from '../../templates/contact/index.html?raw';
 import privacyHtml from '../../templates/privacy/index.html?raw';
 import thanksHtml from '../../templates/contact/thanks/index.html?raw';
+import documentHtml from '../../templates/document/index.html?raw';
+import documentThanksHtml from '../../templates/document/thanks/index.html?raw';
 import { injectGtm } from '../lib/gtm';
 
 const { slug } = Astro.params;
@@ -12,6 +14,8 @@ const pages: Record<string, string> = {
   'contact': contactHtml,
   'privacy': privacyHtml,
   'contact/thanks': thanksHtml,
+  'document': documentHtml,
+  'document/thanks': documentThanksHtml,
 };
 
 let html = pages[String(slug)];
@@ -24,7 +28,7 @@ const staticCanonical = `<link rel="canonical" href="${pageUrl}"><meta property=
 html = html.replace(/<link rel="canonical"[^>]*>/i, '');
 html = html.replace('</head>', staticCanonical + '</head>');
 
-if (String(slug) === 'contact/thanks') {
+if (String(slug) === 'contact/thanks' || String(slug) === 'document/thanks') {
   // ブラウザPixelの Lead を発火。event_id はフォーム送信時に sessionStorage へ
   // 保存されたものを再利用し、/api/contact が送るサーバーCAPI(Lead)と重複排除する。
   // サーバー側CAPIは email/phone をハッシュ化して送るため、計測精度はそちらが担保する。

@@ -12,6 +12,7 @@ const news = mapNews(rawNews);
 const pageUrl = 'https://www.cocomarke.com/news/' + id + '/';
 const title = news.title + ' | お知らせ | COCOマーケ';
 const plainContent = (news.content ?? '')
+  .replace(/!\[[^\]]*\]\(https?:\/\/[^\s)]+\)/g, '')
   .replace(/\[([^\]]+)\]\(https?:\/\/[^\s)]+\)/g, '$1')
   .replace(/<[^>]*>/g, '')
   .replace(/\s+/g, ' ')
@@ -96,6 +97,12 @@ function formatNewsContent(content?: string) {
           (url ? '<br><a href="' + escapeHtml(url) + '" target="_blank" rel="noopener noreferrer">' + escapeHtml(url) + '</a>' : '') +
           '</p>';
       }
+      // 画像埋め込み: ![alt](url) 形式の行を単独で<img>に変換する
+      const imageMatch = line.match(/^!\[([^\]]*)\]\((https?:\/\/[^\s)]+)\)$/);
+      if (imageMatch) {
+        const [, alt, url] = imageMatch;
+        return '<p class="news-image"><img src="' + escapeHtml(url) + '" alt="' + escapeHtml(alt) + '" loading="lazy"></p>';
+      }
       return paragraphsFromText(line);
     })
     .join('');
@@ -126,7 +133,7 @@ const main = '<main class="flex-1">' +
   '</div>' +
   '</main>';
 
-const newsCss = '<style>.news-detail-wrap{max-width:800px;margin:0 auto;padding:120px 48px 80px}.news-detail-title{font-size:17px!important;font-weight:700!important;line-height:1.6!important;color:#041840!important;margin:24px 0 24px!important}.news-detail-line{border-top:1px solid #d8e3f0;margin:0 0 32px}.news-breadcrumb ol{flex-wrap:wrap}.news-breadcrumb li{min-width:0}.news-content p{margin:0 0 1.35em}.news-content a{color:#005bea;text-decoration:underline;overflow-wrap:anywhere}.news-content .news-resource{background:#f5f9fe;border-left:4px solid #00a8f4;padding:14px 16px;margin:1.8em 0;border-radius:6px}.news-content .news-resource strong{display:inline-block;margin-bottom:4px;color:#041840}.news-content ul,.news-content ol{margin:0 0 1.4em 1.5em}.news-content li{margin:.35em 0}.news-content img{max-width:100%;height:auto;border-radius:10px}.news-content h2{font-size:17px;font-weight:700;color:#005bea;margin:2em 0 .8em}.news-content h3{font-size:1.1em;font-weight:700;color:#041840;margin:1.6em 0 .7em}@media(max-width:768px){.news-detail-wrap{padding:96px 20px 60px}.news-detail-title{font-size:15px!important;margin:20px 0 20px!important}.news-detail-line{margin-bottom:28px}.news-breadcrumb{margin-bottom:28px}.news-breadcrumb ol{gap:6px 8px;font-size:11px;line-height:1.6}.news-breadcrumb-current{display:none}.news-content{font-size:14px!important;line-height:1.9!important}.news-content .news-resource{padding:12px 14px;margin:1.5em 0}}</style>';
+const newsCss = '<style>.news-detail-wrap{max-width:800px;margin:0 auto;padding:120px 48px 80px}.news-detail-title{font-size:17px!important;font-weight:700!important;line-height:1.6!important;color:#041840!important;margin:24px 0 24px!important}.news-detail-line{border-top:1px solid #d8e3f0;margin:0 0 32px}.news-breadcrumb ol{flex-wrap:wrap}.news-breadcrumb li{min-width:0}.news-content p{margin:0 0 1.35em}.news-content a{color:#005bea;text-decoration:underline;overflow-wrap:anywhere}.news-content .news-resource{background:#f5f9fe;border-left:4px solid #00a8f4;padding:14px 16px;margin:1.8em 0;border-radius:6px}.news-content .news-resource strong{display:inline-block;margin-bottom:4px;color:#041840}.news-content ul,.news-content ol{margin:0 0 1.4em 1.5em}.news-content li{margin:.35em 0}.news-content img{max-width:100%;height:auto;border-radius:10px}.news-content .news-image{margin:1.6em 0;text-align:center}.news-content .news-image img{border:1px solid #e0eaf7;box-shadow:0 4px 16px rgba(17,37,59,.06)}.news-content h2{font-size:17px;font-weight:700;color:#005bea;margin:2em 0 .8em}.news-content h3{font-size:1.1em;font-weight:700;color:#041840;margin:1.6em 0 .7em}@media(max-width:768px){.news-detail-wrap{padding:96px 20px 60px}.news-detail-title{font-size:15px!important;margin:20px 0 20px!important}.news-detail-line{margin-bottom:28px}.news-breadcrumb{margin-bottom:28px}.news-breadcrumb ol{gap:6px 8px;font-size:11px;line-height:1.6}.news-breadcrumb-current{display:none}.news-content{font-size:14px!important;line-height:1.9!important}.news-content .news-resource{padding:12px 14px;margin:1.5em 0}}</style>';
 
 html = html.replace(/<title>.*?<\/title>/, '<title>' + escapeHtml(title) + '</title>');
 html = html.replace(/<meta name="description" content="[^"]*">/, '<meta name="description" content="' + escapeHtml(description) + '">');

@@ -33,8 +33,12 @@ export const POST: APIRoute = async ({ request }) => {
   };
   const entrySourceLabel = SRC_LABELS[entry_source] || (entry_source || '不明（直接アクセス・ブックマーク等）');
 
-  // 自動返信メールに載せる資料ダウンロードURL（添付は容量が大きいためリンクで案内）
+  // 自動返信メールに載せる資料ダウンロードURL（サイト配布用のフル画質版・約41MB）
   const DOC_PDF_URL = 'https://www.cocomarke.com/dl/cocomarke-service-deck.pdf';
+  // 自動返信メールへの添付用（同一内容・全26ページを画像圧縮した約7MB版）。
+  // フル画質版はbase64換算で約57MBになり、Gmail等の受信上限(25MB)を超えて
+  // 届かないため、メール添付だけ軽量版を使う。Resendが path のURLを取得して添付する。
+  const DOC_PDF_MAIL_URL = 'https://www.cocomarke.com/dl/cocomarke-service-deck-mail.pdf';
 
   // --- スパム対策 ---------------------------------------------------------
   // contact.ts と同様の考え方。検知したら通知は送らず、静かに success:200 を返す。
@@ -119,13 +123,13 @@ export const POST: APIRoute = async ({ request }) => {
             <p style="margin:0 0 8px;font-size:16px;color:#333;">${esc(name)} 様</p>
             <p style="margin:0 0 20px;font-size:15px;color:#333;line-height:1.8;">
               サービス資料のご請求ありがとうございます。<br>
-              下記のボタンから資料（PDF）をダウンロードいただけます。以下の内容で受け付けました。
+              本メールに資料（PDF・全26ページ）を添付しております。以下の内容で受け付けました。
             </p>
 
             <table width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 24px;">
               <tr><td align="center" style="padding:4px 0 0;">
                 <a href="${DOC_PDF_URL}" style="display:inline-block;background:#0965f6;color:#ffffff;font-size:15px;font-weight:bold;text-decoration:none;padding:11px 26px;border-radius:9999px;white-space:nowrap;">&#128195; ダウンロード（PDF）</a>
-                <p style="margin:12px 0 0;font-size:12px;color:#888;line-height:1.7;">ボタンが開かない場合は下記URLをコピーしてご利用ください：<br>
+                <p style="margin:12px 0 0;font-size:12px;color:#888;line-height:1.7;">添付ファイルが開けない場合は、上のボタンまたは下記URLからご覧いただけます：<br>
                 <a href="${DOC_PDF_URL}" style="color:#005bea;word-break:break-all;">${DOC_PDF_URL}</a></p>
               </td></tr>
             </table>
@@ -211,6 +215,12 @@ export const POST: APIRoute = async ({ request }) => {
       to: email,
       subject: '【COCOマーケ】サービス資料をお送りします',
       html: autoHtml,
+      attachments: [
+        {
+          filename: 'COCOマーケ_サービス資料.pdf',
+          path: DOC_PDF_MAIL_URL,
+        },
+      ],
     });
 
     const slackWebhookUrl = import.meta.env.SLACK_WEBHOOK_URL;

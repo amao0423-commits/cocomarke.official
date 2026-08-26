@@ -12,7 +12,12 @@
   ],
   "redirects": [
     {
-      "source": "/blog/lg5qqns998/:path*",
+      "source": "/blog/lg5qqns998",
+      "destination": "/blog/",
+      "permanent": true
+    },
+    {
+      "source": "/blog/lg5qqns998/",
       "destination": "/blog/",
       "permanent": true
     },

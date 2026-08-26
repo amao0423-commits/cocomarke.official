@@ -34,13 +34,21 @@ html = html.replace(
   'grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8 cm-mcarousel'
 );
 
+// 見出し直後のコンテナ位置を探す。h2の中身が <span> で包まれていても一致させる
+// （英語ラベル＋日本語の2段見出しに変更したため、素朴な文字列一致だと外れる）。
+function findAfterHeading(source: string, heading: string, container: string) {
+  const re = new RegExp(heading + '(?:</span>)?</h2></div><div class="' + container + '">');
+  const m = source.match(re);
+  return m ? { start: m.index as number, length: m[0].length } : null;
+}
+
 // --- お知らせ置き換え（6件/ページ・ドットナビ付き）---
 if (newsItems.length > 0) {
-  const SPLIT = 'お知らせ</h2></div><div class="flex flex-col">';
-  const si = html.indexOf(SPLIT);
-  if (si !== -1) {
-    const pre = html.slice(0, si + SPLIT.length);
-    const rest = html.slice(si + SPLIT.length);
+  const hit = findAfterHeading(html, 'お知らせ', 'flex flex-col');
+  if (hit) {
+    const si = hit.start, splitLen = hit.length;
+    const pre = html.slice(0, si + splitLen);
+    const rest = html.slice(si + splitLen);
     const faqIdx = rest.indexOf('<div id="faq"');
     const closing = rest.slice(0, faqIdx).slice(rest.slice(0, faqIdx).lastIndexOf('</div></section>'));
 
@@ -63,11 +71,11 @@ if (newsItems.length > 0) {
 
 // --- FAQ 置き換え ---
 if (faqs.length > 0) {
-  const SPLIT = 'よくある質問</h2></div><div class="space-y-4">';
-  const si = html.indexOf(SPLIT);
-  if (si !== -1) {
-    const pre = html.slice(0, si + SPLIT.length);
-    const rest = html.slice(si + SPLIT.length);
+  const hit = findAfterHeading(html, 'よくある質問', 'space-y-4');
+  if (hit) {
+    const si = hit.start, splitLen = hit.length;
+    const pre = html.slice(0, si + splitLen);
+    const rest = html.slice(si + splitLen);
     const ci = rest.indexOf('</div></section></div>');
     const plusSvg = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="faq-icon w-5 h-5 text-primary shrink-0 transition-transform duration-200"><path d="M5 12h14"></path><path class="faq-v" d="M12 5v14"></path></svg>';
     const newFaqs = faqs.map(item =>
@@ -172,7 +180,10 @@ const contactFormFn = `(function(){
 })();`;
 
 html = html.replace('</head>', carouselCss + '</head>');
-html = html.replace('</main>', ctaSection + '</main>');
+// テンプレート側に同じCTAが含まれている場合があるため、重複挿入を防ぐ
+if (!html.includes('cta-background-02.jpg')) {
+  html = html.replace('</main>', ctaSection + '</main>');
+}
 html = html.replace('</body>', scriptOpen + accordionFn + newsPaginationFn + carouselFn + contactFormFn + scriptClose + '</body>');
 html = injectGtm(html);
 

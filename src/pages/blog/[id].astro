@@ -370,9 +370,11 @@ if (bodyHtml) {
   cleanedBody = cleanedBody.replace(/(<img[^>]+src=")(https:\/\/images\.microcms-assets\.io\/[^"?]+)"/g, '$1$2?fm=webp&w=880&q=78&fit=max"');
   // 2つ目の本文段落末にミニCTA（離脱前接触）
   if (island) cleanedBody = injectMiniCta(cleanedBody, island, id ?? '');
-  // override.faqs が指定されているときだけ本文FAQをストリップして差し替える
+  // override.faqs が指定されているときだけ本文FAQをストリップして差し替える。
+  // 削除範囲はFAQ見出しから「次のH2の直前まで」。末尾まで消すと、FAQの後ろに
+  // 「まとめ」等が続く記事でその節ごと本文から消えてしまう。
   if (override?.faqs?.length) {
-    cleanedBody = cleanedBody.replace(/<h2[^>]*>[^<]*よくある質問[^<]*<\/h2>[\s\S]*/gi, '');
+    cleanedBody = cleanedBody.replace(/<h2[^>]*>[^<]*よくある質問[^<]*<\/h2>[\s\S]*?(?=<h2|$)/gi, '');
   }
   const BODY_START = '<div class="pt-20 flex flex-col gap-20">';
   const BODY_END   = '</div></article>';

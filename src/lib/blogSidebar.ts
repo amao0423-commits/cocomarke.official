@@ -9,8 +9,16 @@
 const DIAGNOSIS_URL = 'https://www.cocomake-guide.com/analysis?utm_source=cocomarke&utm_medium=blog_sidebar&utm_campaign=blog&utm_content=banner_diagnosis';
 // サブスク訴求バナー（記事ページに追加）
 const SUBSCRIPTION_URL = 'https://www.cocomake-guide.com/subscription?utm_source=blog&utm_medium=sidebar&utm_campaign=instagram_engagement_article';
-// サービス概要（資料）バナー：自社の資料請求LPへ
-const DOC_URL = '/document/?src=blog';
+// サービス概要（資料）バナー：自社の資料請求LPへ。
+// 記事ページでは記事ごとに utm_campaign を分けて、どの記事の資料バナーから
+// 申込に至ったかをGA4で記事単位に判別できるようにする（docUrl(slug)）。
+// 一覧・カテゴリーページは記事が特定できないため campaign=blog_list で固定。
+function docUrl(slug?: string): string {
+  const campaign = slug ? encodeURIComponent(slug) : 'blog_list';
+  return '/document/?src=blog' +
+    '&utm_source=cocomarke_blog&utm_medium=article' +
+    `&utm_campaign=${campaign}&utm_content=document_cta`;
+}
 const BANNER_DIAGNOSIS = '/images/blog_detail-banner-01.png';
 const BANNER_SUBSCRIPTION = '/images/blog_detail-banner-subscription.png';
 const BANNER_DOC = '/images/blog_detail-banner-02.png'; // ※サービス概要は3枚目に差し替え（同ファイルを上書き）
@@ -63,7 +71,7 @@ export function ctaBanners(): string {
     `<a href="${DIAGNOSIS_URL}" target="_blank" rel="noopener noreferrer" class="cm-side-banner" aria-label="アカウント無料診断">` +
       `<img src="${BANNER_DIAGNOSIS}" alt="1分で無料診断｜アカウント分析" loading="lazy">` +
     '</a>' +
-    `<a href="${DOC_URL}" class="cm-side-banner" aria-label="サービス資料ダウンロード">` +
+    `<a href="${docUrl()}" target="_blank" rel="noopener noreferrer" class="cm-side-banner" aria-label="サービス資料ダウンロード">` +
       `<img src="${BANNER_DOC}" alt="COCOマーケ サービス概要 資料ダウンロード" loading="lazy">` +
     '</a>'
   );
@@ -106,10 +114,10 @@ function bannerLink(href: string, img: string, alt: string, external = true): st
   return `<a href="${href}"${targetAttrs} class="cm-side-banner" aria-label="${esc(alt)}"><img src="${img}" alt="${esc(alt)}" loading="lazy"></a>`;
 }
 
-export function articleSidebar(latest: LatestItem[]): string {
+export function articleSidebar(latest: LatestItem[], slug?: string): string {
   return '<aside class="cm-article-aside hidden lg:flex">' +
     bannerLink(DIAGNOSIS_URL, BANNER_DIAGNOSIS, '1分で無料診断｜アカウント分析') +
-    bannerLink(DOC_URL, BANNER_DOC, 'COCOマーケ サービス概要 資料ダウンロード', false) +  // サービス概要は最新記事の上
+    bannerLink(docUrl(slug), BANNER_DOC, 'COCOマーケ サービス概要 資料ダウンロード') +  // サービス概要は最新記事の上
     latestArticlesBox(latest) +
     searchBox() +
     bannerLink(SUBSCRIPTION_URL, BANNER_SUBSCRIPTION, 'インスタ運用をサブスクで｜COCOマーケ') +  // サブスクは検索の下
@@ -118,10 +126,10 @@ export function articleSidebar(latest: LatestItem[]): string {
 
 // モバイル専用：記事末（著者ボックスの下）にサブスク＋サービス概要バナーを並べる
 // （右サイドバーはモバイル非表示のため、モバイルではここで表示）
-export function mobileArticleBanners(): string {
+export function mobileArticleBanners(slug?: string): string {
   return '<div class="cm-mobile-banners">' +
     bannerLink(SUBSCRIPTION_URL, BANNER_SUBSCRIPTION, 'インスタ運用をサブスクで｜COCOマーケ') +
-    bannerLink(DOC_URL, BANNER_DOC, 'COCOマーケ サービス概要 資料ダウンロード', false) +
+    bannerLink(docUrl(slug), BANNER_DOC, 'COCOマーケ サービス概要 資料ダウンロード') +
   '</div>';
 }
 

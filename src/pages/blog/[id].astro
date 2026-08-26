@@ -385,7 +385,7 @@ if (bodyHtml) {
       overrideFaqHtml +
       (island ? articleEndCta(island, id ?? '') : '') +
       authorBox() +
-      mobileArticleBanners() +
+      mobileArticleBanners(id ?? '') +
       BODY_END + html.slice(ei + BODY_END.length);
   }
 }
@@ -558,7 +558,7 @@ const asideStart = html.indexOf(ASIDE_OPEN);
 if (asideStart !== -1) {
   const asideEnd = html.indexOf('</aside>', asideStart);
   if (asideEnd !== -1) {
-    html = html.slice(0, asideStart) + articleSidebar(latestItems) + html.slice(asideEnd + '</aside>'.length);
+    html = html.slice(0, asideStart) + articleSidebar(latestItems, id ?? '') + html.slice(asideEnd + '</aside>'.length);
   }
 }
 

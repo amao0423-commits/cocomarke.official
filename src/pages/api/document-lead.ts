@@ -30,6 +30,7 @@ export const POST: APIRoute = async ({ request }) => {
     bottom:  'トップ 下部の資料DLボタン',
     float:   '右下フローティングの資料DLボタン',
     blog:    'ブログ記事サイドバーの資料バナー',
+    menu:    'モバイルメニューの「資料ダウンロード」ボタン',
   };
   const entrySourceLabel = SRC_LABELS[entry_source] || (entry_source || '不明（直接アクセス・ブックマーク等）');
 

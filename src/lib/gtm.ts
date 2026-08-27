@@ -17,6 +17,10 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 // モバイルメニュー: オーバーレイ内リンク（サービス等の同一ページ内アンカー）をタップしても
 // オーバーレイが閉じず、全画面のまま被さって「無反応」に見える → 連打(イライラクリック)の原因。
 // リンクタップ時に即クローズして、スクロール先がすぐ見えるようにする。全ページ共通で注入。
+// あわせて、メニューを開いている間は右下フローティングCTAを隠す。
+// 出しっぱなしだとメニュー下部の「お問い合わせ」ボタンに重なってタップを妨げるため。
+// 開閉はテンプレート側のスクリプトが style を直接書き換えるので、
+// MutationObserver で style の変化を監視して追従する。
 const MENU_LINK_CLOSE = `<script>(function(){
 var o=document.querySelector('header div.fixed');
 if(!o)return;
@@ -24,6 +28,17 @@ o.addEventListener('click',function(e){
   var t=e.target,a=(t&&t.closest)?t.closest('a'):null;
   if(a&&o.contains(a)){o.style.opacity='0';o.style.pointerEvents='none';}
 },true);
+var f=document.querySelector('.cm-float');
+if(!f)return;
+function sync(){
+  // opacity は transition の途中値を返すため判定に使わない。
+  // pointer-events は即時に切り替わるので開閉状態を正しく表す。
+  var open=getComputedStyle(o).pointerEvents!=='none';
+  f.style.visibility=open?'hidden':'';
+  f.style.opacity=open?'0':'';
+}
+new MutationObserver(sync).observe(o,{attributes:true,attributeFilter:['style','class']});
+sync();
 })();</script>`;
 
 const META_PIXEL_HEAD = `<!-- Meta Pixel Code -->
@@ -52,12 +67,37 @@ const CANONICAL_HEADER_NAV = '<nav class="hidden lg:flex items-center gap-6"><ul
 
 const DESKTOP_NAV_RE = /<nav class="hidden lg:flex[\s\S]*?<\/nav>/;
 
+// モバイルメニューの末尾（ナビ一覧の閉じ〜お問い合わせボタン）。全テンプレートで同一。
+// ここを丸ごと差し替えて「お役立ち資料（外部リンク・囲み）」＋「資料ダウンロード」を足す。
+const MOBILE_MENU_TAIL_RE =
+  /<\/ul><div class="mt-8"><a class="flex items-center justify-center gap-2 bg-gradient-to-r from-\[#00c6fb\] to-\[#0965f6\] text-white text-base font-bold px-6 py-4 rounded-full text-center" href="\/contact\/">[\s\S]*?<\/a><\/div>/;
+
+// 使用クラスはプリビルドCSSに実在するものだけ（任意値クラスは生成されていないと無効になる）
+const MOBILE_MENU_TAIL =
+  '</ul>' +
+  // 外部サイトへの導線はサイト内ナビと混ざらないよう囲んで分離する
+  '<div class="mt-6 bg-[#f5f9fe] rounded-[10px] px-4 py-3">' +
+    '<a class="flex items-center justify-between gap-2" href="https://www.cocomake-guide.com/" target="_blank" rel="noopener noreferrer">' +
+      '<div class="text-base font-medium">お役立ち資料</div>' +
+      '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4 text-[#828282]"><path d="M7 17 17 7"></path><path d="M7 7h10v10"></path></svg>' +
+    '</a>' +
+  '</div>' +
+  // CTAは2つとも全幅・縦積み。最も強い導線（お問い合わせ）を下＝親指が届く位置に置く
+  '<div class="mt-6"><a class="flex items-center justify-center gap-2 bg-white border-2 border-[#005BEA] text-[#005BEA] text-base font-bold px-6 py-4 rounded-full text-center" href="/document/?src=menu">' +
+    '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-download w-4 h-4"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" x2="12" y1="15" y2="3"></line></svg>資料ダウンロード</a></div>' +
+  '<div class="mt-4"><a class="flex items-center justify-center gap-2 bg-gradient-to-r from-[#00c6fb] to-[#0965f6] text-white text-base font-bold px-6 py-4 rounded-full text-center" href="/contact/">' +
+    '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-mail w-4 h-4"><rect width="20" height="16" x="2" y="4" rx="2"></rect><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"></path></svg>お問い合わせ</a></div>';
+
 function injectNewsNav(html: string) {
   let r = html
     .replace(
       '<li><a href="/#faq"><div class="text-base font-medium">よくある質問</div></a></li><li><a href="/blog/">',
       '<li><a href="/#faq"><div class="text-base font-medium">よくある質問</div></a></li><li><a href="/news/"><div class="text-base font-medium">お知らせ</div></a></li><li><a href="/blog/">'
     );
+  // モバイルメニューに お役立ち資料（囲み）＋ 資料ダウンロード を追加（全ページ共通）
+  if (!r.includes('href="/document/?src=menu"')) {
+    r = r.replace(MOBILE_MENU_TAIL_RE, MOBILE_MENU_TAIL);
+  }
   // PCヘッダーのnavを正規版に丸ごと差し替え（全ページ共通化）
   if (DESKTOP_NAV_RE.test(r)) {
     r = r.replace(DESKTOP_NAV_RE, CANONICAL_HEADER_NAV);

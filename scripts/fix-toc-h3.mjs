@@ -23,7 +23,10 @@ if (!slugs.length) {
 
 const EXCLUDE = ['この記事でわかること', '目次'];
 const text = (s) => s.replace(/<[^>]+>/g, '').replace(/&nbsp;/g, ' ').replace(/\s+/g, ' ').trim();
+// FAQ見出しの判定。「Q.」で始まらない質問もあるため、
+// 直近のH2がFAQ系かどうかでも判断する（そちらのほうが取りこぼしが少ない）。
 const isFaqQ = (t) => /^Q\s*\d*\s*[.．、:：]?/.test(t);
+const isFaqH2 = (t) => /よくある質問|FAQ|Q\s*&\s*A|Q＆A/i.test(t);
 
 function build(html) {
   // 目次＝アンカーを含む最初のリスト
@@ -57,11 +60,11 @@ function build(html) {
     out[out.length - 1] += (sub.length ? `<ul>${sub.join('')}</ul>` : '') + '</li>';
     sub = [];
   };
-  let h2n = 0, h3n = 0, skipped = 0;
+  let h2n = 0, h3n = 0, skipped = 0, inFaq = false;
   for (const h of heads) {
-    if (h.lv === 'h2') { flush(); out.push(li(h)); h2n++; }
+    if (h.lv === 'h2') { flush(); out.push(li(h)); h2n++; inFaq = isFaqH2(h.t); }
     else {
-      if (NO_FAQ && isFaqQ(h.t)) { skipped++; continue; }
+      if (NO_FAQ && (inFaq || isFaqQ(h.t))) { skipped++; continue; }
       if (!out.length) continue;              // H2より前のH3は入れ子にできないので除外
       sub.push(li(h) + '</li>'); h3n++;
     }

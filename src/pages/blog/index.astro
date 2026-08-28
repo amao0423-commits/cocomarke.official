@@ -109,14 +109,14 @@ if(mBtn&&mDrop){
 }
 })();`;
 // モバイルは記事10件まで表示し、11件目以降は「もっと見る」で表示
+// テンプレート側の既存ボタンを使う。PCは全件表示のため非表示にする
 const moreMobileCss = '<style>'
   + '@media(max-width:1023px){.cm-hidden-mobile{display:none!important;}}'
-  + '.cm-more-wrap{display:none;justify-content:center;margin-top:28px;}'
-  + '@media(max-width:1023px){.cm-more-wrap{display:flex;}}'
-  + '.cm-more-btn{background:#005bea;color:#fff;font-weight:700;padding:13px 40px;border-radius:9999px;font-size:14px;border:none;cursor:pointer;}'
-  + '.cm-more-btn:hover{opacity:.9;}'
+  + '.cm-more-wrap{display:none!important;}'
+  + '@media(max-width:1023px){.cm-more-wrap{display:flex!important;}}'
+  + '.cm-more-wrap.cm-more-done{display:none!important;}'
   + '</style>';
-const moreMobileJs = "(function(){var grid=document.querySelector('.cm-blog-main .grid');if(!grid)return;var cards=grid.querySelectorAll('.blog-card');if(cards.length<=10)return;for(var i=10;i<cards.length;i++)cards[i].classList.add('cm-hidden-mobile');var w=document.createElement('div');w.className='cm-more-wrap';var b=document.createElement('button');b.type='button';b.className='cm-more-btn';b.textContent='もっと見る';b.addEventListener('click',function(){grid.querySelectorAll('.cm-hidden-mobile').forEach(function(c){c.classList.remove('cm-hidden-mobile');});w.style.display='none';});w.appendChild(b);grid.parentNode.insertBefore(w,grid.nextSibling);})();";
+const moreMobileJs = "(function(){var main=document.querySelector('.cm-blog-main');var grid=main&&main.querySelector('.grid');if(!grid)return;var link=null,as=main.querySelectorAll('a[href=\"#\"]');for(var i=0;i<as.length;i++){if(as[i].textContent.indexOf('もっと見る')>=0){link=as[i];break;}}if(!link)return;var wrap=link.parentNode;var cards=grid.querySelectorAll('.blog-card');if(cards.length<=10){wrap.style.display='none';return;}wrap.classList.add('cm-more-wrap');for(var j=10;j<cards.length;j++)cards[j].classList.add('cm-hidden-mobile');link.addEventListener('click',function(e){e.preventDefault();grid.querySelectorAll('.cm-hidden-mobile').forEach(function(c){c.classList.remove('cm-hidden-mobile');});wrap.classList.add('cm-more-done');});})();";
 
 html = html.replace('</body>', `<script>${filterJs}</script><script>${LIST_FILTER_JS}</script><script>${moreMobileJs}</script></body>`);
 

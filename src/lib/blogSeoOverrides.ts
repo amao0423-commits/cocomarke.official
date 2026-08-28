@@ -10,7 +10,7 @@ export const SEO_OVERRIDES: Record<string, SeoOverride> = {
   'instagram-story-highlights-guide-2026': {
     title: 'ストーリーハイライトの作り方・編集方法完全ガイド｜カバー画像・削除・2026年のタブ化まで解説',
     description: 'Instagramのストーリーハイライトの作り方・編集・削除方法を公式ヘルプの仕様に基づいて解説。カバー画像のサイズ・作り方、2024年後半から進むプロフィールのタブ化（ハート型アイコン）という2026年の変化、業種別の活用テンプレートまでまとめました。',
-    lead: 'ストーリーハイライトは、24時間で消えるストーリーの中から繰り返し見せたい情報だけを選んでプロフィールに常設する機能です。この記事では作成・編集・削除の手順、カバー画像の作り方、2024年後半から進むプロフィールのタブ化という2026年の変化、業種別の活用テンプレートまで解説します。',
+    lead: '',
     faqs: [],
     relatedLinks: [
       { href: '/blog/instagram-highlight-update-2025-marketing-strategy/', label: 'インスタハイライトが「丸」に回帰？企業のマーケティング戦略への影響' },
@@ -22,7 +22,7 @@ export const SEO_OVERRIDES: Record<string, SeoOverride> = {
   'instagram-recommendations-criteria-2026': {
     title: 'インスタの「おすすめ」に出てくる人の基準とは？公式情報でわかる仕組みと、消す・載る対策法【2026年最新】',
     description: 'インスタのおすすめに出てくる人の基準を、Metaの公式発表をもとに解説。共通フォロワー・連絡先同期・興味シグナルなど7つの判定材料、「相手にもバレるのか」の答え、おすすめを消す／リセットする手順、逆に発見タブに載るための2026年の条件までまとめました。',
-    lead: 'Instagramの「おすすめ」に知り合いや無関係な人が出てくる基準は、Meta公式ブログ・ヘルプセンター・Adam Mosseriの発言という一次情報で説明されています。この記事では7つの判定基準を分解し、他人のおすすめを消す方法、自分がおすすめに出ないようにする方法、逆に自社アカウントをおすすめ・発見タブに載せる方法まで解説します。',
+    lead: '',
     faqs: [],
     relatedLinks: [
       { href: '/blog/instagram-algorithm-update-latest/', label: 'インスタ アルゴリズムの最新動向と運用への影響' },
@@ -35,7 +35,7 @@ export const SEO_OVERRIDES: Record<string, SeoOverride> = {
   'instagram-mention-how-to': {
     title: 'インスタのメンションとは？通知・やり方・タグ付けとの違い',
     description: 'Instagramのメンション機能の使い方・やり方を解説。タグ付けとの違い、通知が届かない原因、ストーリーでのメンション方法など疑問をまとめました。',
-    lead: 'メンションとは、投稿文やコメントで「@ユーザー名」と入力して相手に通知を届け、プロフィールへの導線を作る機能です。タグ付けとは仕組みが異なり、場所・用途・相手への影響がそれぞれ違います。この記事は、メンション機能を正しく使いたいInstagram運用者向けにまとめています。',
+    lead: '',
     faqs: [
       {
         q: 'メンションとタグ付けはどう違いますか？',
@@ -64,7 +64,7 @@ export const SEO_OVERRIDES: Record<string, SeoOverride> = {
   'instagram-dm-troubleshooting-guide': {
     title: 'インスタDMの不具合まとめ｜送れない・消えた原因と対処法',
     description: 'インスタグラムのDMが送れない・既読にならない・消えた・通知が来ないなど不具合の原因と対処法を一覧でまとめました。',
-    lead: 'インスタDMの不具合は「相手の制限設定」「アプリのキャッシュ」「通信環境」のいずれかが原因であることがほとんどです。この記事は、DMトラブルの原因を素早く特定して解決したい方向けにまとめています。',
+    lead: '',
     faqs: [
       {
         q: 'DMが送れない原因は何ですか？',
@@ -93,7 +93,7 @@ export const SEO_OVERRIDES: Record<string, SeoOverride> = {
   'instagram-account-multiple-users-share-2025-safe': {
     title: 'インスタアカウントを複数人で共有する方法と注意点',
     description: 'Instagramを複数人で共有・運用する方法を解説。ビジネスアカウントの権限管理、安全なパスワード管理、乗っ取りリスクへの対策をまとめました。',
-    lead: 'Instagramを複数人で運用するには、Metaビジネスマネージャーの「ユーザー権限」機能を使うのが最も安全な方法です。パスワードの直接共有は乗っ取りリスクがあるため推奨されません。この記事は、企業・チームでインスタアカウントを管理したい担当者向けにまとめています。',
+    lead: '',
     faqs: [
       {
         q: 'Instagramを複数人で使うにはパスワードを共有する必要がありますか？',
@@ -122,7 +122,7 @@ export const SEO_OVERRIDES: Record<string, SeoOverride> = {
   'instagram-hashtag-5-limit-2025': {
     title: 'インスタのハッシュタグは5個まで？最適な数を解説',
     description: 'Instagramのハッシュタグ推奨数は2024年以降「3〜5個」が公式見解です。30個上限の使い方や伸びない原因、おすすめの数と選び方を解説します。',
-    lead: 'Instagramのハッシュタグは「3〜5個」が現在の公式推奨数です。以前は30個まで使うのが常識でしたが、2023年にInstagram公式（Adam Mosseri）が「5個以下」を推奨すると発言し、多用は効果が薄いとされています。この記事は、ハッシュタグの最適な使い方を知りたいInstagram運用者向けにまとめています。',
+    lead: '',
     faqs: [
       {
         q: 'ハッシュタグは本当に5個以下がいいですか？',
@@ -147,7 +147,7 @@ export const SEO_OVERRIDES: Record<string, SeoOverride> = {
   'insta-influencer-marketing-guide': {
     title: 'Instagramインフルエンサーマーケティング完全ガイド｜費用相場・選び方・KPI・PR表記まで解説【2026年版】',
     description: 'Instagramインフルエンサーマーケティングの費用相場・手法・インフルエンサーの選び方・KPI設計・ステマ規制対応まで解説。マイクロとメガの使い分け、PR表記の方法、失敗例と回避策も網羅した実務向けガイドです。',
-    lead: 'Instagramインフルエンサーマーケティングとは、インフルエンサーの発信力と信頼を活用して認知拡大・購買促進を狙う施策です。成果を出すには「誰に頼むか」より「目的・設計・測定」の3つが重要です。費用相場・選び方・PR表記のルールまで実務に必要な情報を整理します。',
+    lead: '',
     faqs: [],
     relatedLinks: [
       { href: '/blog/instagram-management-agency-comparison/', label: 'Instagram運用代行おすすめ14社を比較' },
@@ -159,7 +159,7 @@ export const SEO_OVERRIDES: Record<string, SeoOverride> = {
   'instagram-management-agency-comparison': {
     title: 'Instagram運用代行おすすめ14社を比較｜費用相場・選び方・失敗しないポイントを解説【2026年版】',
     description: 'Instagram運用代行会社おすすめ14社を比較。料金相場、支援範囲、得意業種、選び方をわかりやすく解説します。店舗集客・認知拡大・問い合わせ獲得など目的別に、自社に合う運用代行会社を選びたい方におすすめです。',
-    lead: 'Instagram運用代行とは、企業や店舗のInstagram運用を戦略設計から投稿・分析まで支援するサービスです。ただし、得意業種・対応範囲・料金体系は会社ごとに大きく異なります。この記事では14社を比較しながら、費用相場・選び方・目的別のおすすめを整理します。',
+    lead: '',
     faqs: [],
     relatedLinks: [
       { href: '/blog/instagram-algorithm-latest-complete-guide/', label: 'Instagramアルゴリズム完全ガイド' },
@@ -172,7 +172,7 @@ export const SEO_OVERRIDES: Record<string, SeoOverride> = {
   'short-video-ads-guide': {
     title: 'ショート動画広告（短尺動画広告）とは？売上アップにつなげるポイントも解説',
     description: 'ショート動画広告（短尺動画広告）の概要・TikTok／Instagram Reels／YouTube Shortsの比較・売上アップにつながる5つの制作ポイント・KPI設定まで解説。動画広告を始めたい企業向けの実務ガイドです。',
-    lead: 'ショート動画広告とは、15〜60秒の短尺動画を使った広告形式で、TikTok・Instagram Reels・YouTube Shortsなどスマートフォン向けSNSに特化したデジタル広告です。スキップされにくく低コストで始めやすい一方、冒頭3秒の設計とプラットフォーム選定が成果を左右します。この記事は、ショート動画広告を検討している企業のマーケ担当者向けにまとめています。',
+    lead: '',
     faqs: [
       {
         q: 'ショート動画広告とは何ですか？',
@@ -214,7 +214,7 @@ export const SEO_OVERRIDES: Record<string, SeoOverride> = {
   'free-instagram-account-check': {
     title: 'Instagramアカウントが伸びない原因と改善策｜無料アカウント診断のご案内',
     description: 'Instagramアカウントが伸びない原因をプロが無料で診断します。アカウント設計・投稿テーマ・導線設計など伸び悩みの根本原因を特定し、優先度つきの改善策をご提案。500社以上の支援実績を持つ専任マネージャーが対応します。',
-    lead: 'Instagramアカウントが伸びない原因は、投稿の見た目ではなくアカウント設計・テーマの一貫性・導線設計に潜んでいることがほとんどです。この記事では伸び悩みの根本原因を解説したうえで、COCOマーケの無料アカウント診断サービスをご案内します。',
+    lead: '',
     faqs: [
       {
         q: '無料アカウント診断では何をしてもらえますか？',
@@ -247,7 +247,7 @@ export const SEO_OVERRIDES: Record<string, SeoOverride> = {
   'instagram-pros-cons-marketing-managers': {
     title: '企業のインスタ運用のメリット・デメリットを比較｜向いている企業と始める前の注意点',
     description: '企業のInstagram運用のメリット・デメリットを比較。向いている企業・向いていない企業の判断基準、失敗しにくい始め方、外注すべきケースまで解説します。マーケ担当者の意思決定に役立つ実務向けガイドです。',
-    lead: '企業のインスタ運用のメリット・デメリットと、向いている企業・向いていない企業の判断軸を整理した記事です。ビジュアルで魅力が伝わる商材と継続運用の体制があれば有効ですが、即効性を求める場合は注意が必要です。この記事は、Instagram運用を始めるか迷っているマーケ担当者向けにまとめています。',
+    lead: '',
     faqs: [
       {
         q: '企業のInstagram運用は本当に必要ですか？',
@@ -295,7 +295,7 @@ export const SEO_OVERRIDES: Record<string, SeoOverride> = {
   'instagram-live-how-to-guide-2026': {
     title: 'インスタライブのやり方｜配信手順・条件・見方まとめ',
     description: 'Instagramライブ配信の始め方・やり方・視聴方法を解説。配信できない原因、コメントの設定、通知のやり方も含めて2026年最新版でまとめました。',
-    lead: 'インスタライブは、フォロワーへリアルタイムに映像を届けられる機能で、認知拡大・エンゲージメント向上に効果的です。この記事は、ライブ配信を始めたい・うまく活用したいInstagram運用者向けに、手順・条件・よくあるトラブルをまとめています。',
+    lead: '',
     faqs: [
       {
         q: 'インスタライブを始めるための条件はありますか？',

@@ -171,6 +171,10 @@ html { scroll-behavior: smooth; }
   min-width: 220px;
   max-width: 100%;
 }
+/* .cms-body ol の padding-left(1.6em) のほうが詳細度が高く上書きされてしまい、
+   2桁の番号（10. 以降）が枠の外にはみ出していた。同等以上の詳細度で確保する。 */
+.cms-body ol.toc-box,
+.cms-body ul.toc-box { padding: 20px 24px 20px 48px; }
 .toc-box li {
   margin-bottom: 8px;
   color: #1a1a1a;

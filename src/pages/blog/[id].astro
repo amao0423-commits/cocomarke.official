@@ -425,8 +425,33 @@ if (relatedBlogs.length > 0) {
   }
 }
 
-const displayTitle = override?.title ?? blog.title;
-const displayDesc  = override?.description ?? (blog.body ?? blog.content ?? '').replace(/<[^>]+>/g, '').slice(0, 120);
+// 本文からメタディスクリプションを組み立てる。
+// 単純に先頭120字を切ると「目次」「この記事でわかること」から始まってしまい、
+// 検索結果のスニペットとして機能しないため、それらを除いた最初の段落から作る。
+function deriveDescription(src: string): string {
+  let s = src;
+  // 目次（アンカーを含むリスト）を除去
+  for (const m of s.matchAll(/<(ol|ul)>[\s\S]*?<\/\1>/g)) {
+    if (m[0].includes('href="#')) { s = s.slice(0, m.index) + s.slice(m.index + m[0].length); break; }
+  }
+  // 「目次」「この記事でわかること」の見出しと、その直後のリストを除去
+  s = s.replace(/<h2[^>]*>[^<]{0,20}(?:目次|この記事でわかること)[^<]{0,10}<\/h2>\s*(?:<(ol|ul)>[\s\S]*?<\/\1>)?/g, '');
+  // 段落だけを拾って連結（見出しや表から始まるのを避ける）
+  const paras = [...s.matchAll(/<p[^>]*>([\s\S]*?)<\/p>/g)]
+    .map((m) => m[1].replace(/<[^>]+>/g, '').replace(/&nbsp;/g, ' ').replace(/\s+/g, ' ').trim())
+    .filter((t) => t.length >= 15);
+  const text = (paras.join(' ') || s.replace(/<[^>]+>/g, '').replace(/\s+/g, ' ')).trim();
+  if (text.length <= 120) return text;
+  // 120字前後で文末（。）が来るならそこで切る
+  const cut = text.slice(0, 120);
+  const period = cut.lastIndexOf('。');
+  return period >= 70 ? cut.slice(0, period + 1) : cut;
+}
+
+// override は空文字のときも「未設定」として扱う（?? だと空文字を通してしまう）
+const displayTitle = (override?.title || '').trim() || blog.title;
+const displayDesc  = (override?.description || '').trim()
+  || deriveDescription(blog.body ?? blog.content ?? '');
 
 html = html.replace(/<title>.*?<\/title>/, '<title>' + escapeHtml(displayTitle) + ' | COCOマーケ</title>');
 html = html.replace('/blog/sample/', '/blog/' + (id ?? '') + '/');

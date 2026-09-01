@@ -185,7 +185,14 @@ export function articleMiniCta(island: Island, slug = ''): string {
 
 // 本文2つ目の段落（<p>）の直後にミニCTAを挿入（離脱前接触・配置を統一）。
 // わかること/目次（ul/ol）には <p> が無いため、自然と本文プロローグ後に入る。
+// ミニCTA（本文2段落目のあとに入る細い帯）を出さない記事。
+// 記事末CTAと文言が重なる等の理由で、個別に除外する。
+const NO_MINI_CTA = new Set<string>([
+  'insta-identity-verification-fix',
+]);
+
 export function injectMiniCta(body: string, island: Island, slug = ''): string {
+  if (NO_MINI_CTA.has(slug)) return body;
   const mini = articleMiniCta(island, slug);
   const re = /<\/p>/g;
   let count = 0;

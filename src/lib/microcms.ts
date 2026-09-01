@@ -30,6 +30,9 @@ type RawBlog = {
   eyecatch?: { url: string; width?: number; height?: number; alt?: string };
   category?: { name: string } | string;
   day?: string;
+  // 任意フィールド。microCMS側に日付フィールド updatedDate を追加すると、
+  // 編集者が「更新日」を明示的に指定できる（未設定なら updatedAt を使う）。
+  updatedDate?: string;
   publishedAt: string;
   updatedAt: string;
 };
@@ -58,6 +61,7 @@ export type Blog = {
   category?: { name: string } | string;
   body?: string;
   day?: string;
+  updatedDate?: string;
   publishedAt: string;
   updatedAt: string;
 };
@@ -91,6 +95,7 @@ export function mapBlog(raw: RawBlog): Blog {
     category: raw.category,
     body: raw.content,
     day: raw.day,
+    updatedDate: raw.updatedDate,
     publishedAt: raw.publishedAt,
     updatedAt: raw.updatedAt,
   };

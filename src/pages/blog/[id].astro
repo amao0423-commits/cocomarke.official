@@ -100,7 +100,11 @@ html = html.replace(
 html = html.replace('>0000.00.00<', '>' + date + '<');
 // 更新日表示：投稿日と日付（日単位）が異なる場合のみ「更新日：」を追加表示する
 // （リライト等で本当に更新した記事だけに表示し、未更新記事には表示しない）
-const updatedSource = blog.updatedAt;
+// 更新日は、CMSに updatedDate（任意フィールド）があればそれを優先する。
+// 無い場合は microCMS が自動更新する updatedAt を使う。
+// updatedAt は目次の修正など軽微な編集でも動くため、記事の実質的な
+// 更新日を示したい場合は updatedDate をCMS側で設定する運用が向く。
+const updatedSource = blog.updatedDate || blog.updatedAt;
 if (updatedSource) {
   const updatedDate = formatDate(updatedSource);
   if (updatedDate !== date) {

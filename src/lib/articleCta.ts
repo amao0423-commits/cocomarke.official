@@ -149,8 +149,14 @@ function withUtm(url: string, medium: string, campaign: string, content: string)
   return url + sep + qs;
 }
 
+// 記事末CTA（大きめのブロック）を出さない記事。
+const NO_END_CTA = new Set<string>([
+  'insta-identity-verification-fix',
+]);
+
 // 記事末CTA（資料DL or 無料診断を主役に、問い合わせは小さく添える）
 export function articleEndCta(island: Island, slug = ''): string {
+  if (NO_END_CTA.has(slug)) return '';
   const c = ISLAND[island];
   const url = withUtm(c.url, 'article_cta', island, slug || island);
   return (
@@ -183,14 +189,14 @@ export function articleMiniCta(island: Island, slug = ''): string {
   );
 }
 
-// 本文2つ目の段落（<p>）の直後にミニCTAを挿入（離脱前接触・配置を統一）。
-// わかること/目次（ul/ol）には <p> が無いため、自然と本文プロローグ後に入る。
 // ミニCTA（本文2段落目のあとに入る細い帯）を出さない記事。
 // 記事末CTAと文言が重なる等の理由で、個別に除外する。
 const NO_MINI_CTA = new Set<string>([
   'insta-identity-verification-fix',
 ]);
 
+// 本文2つ目の段落（<p>）の直後にミニCTAを挿入（離脱前接触・配置を統一）。
+// わかること/目次（ul/ol）には <p> が無いため、自然と本文プロローグ後に入る。
 export function injectMiniCta(body: string, island: Island, slug = ''): string {
   if (NO_MINI_CTA.has(slug)) return body;
   const mini = articleMiniCta(island, slug);

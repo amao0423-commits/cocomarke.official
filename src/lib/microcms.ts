@@ -103,11 +103,15 @@ export function mapBlog(raw: RawBlog): Blog {
 
 // ---- Utilities ----
 
+// 日付は必ず日本時間で表示する。
+// microCMSは日時をUTCで返し、実行環境（Vercel）のTZもUTCのため、
+// ローカル時刻で組み立てると「CMSで9/1と入力した記事が8/31と表示される」
+// （JSTの0:00 = UTCの前日15:00）というズレが起きていた。
 export function formatDate(iso: string): string {
-  const d = new Date(iso);
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
+  const d = new Date(new Date(iso).getTime() + 9 * 60 * 60 * 1000);
+  const y = d.getUTCFullYear();
+  const m = String(d.getUTCMonth() + 1).padStart(2, '0');
+  const day = String(d.getUTCDate()).padStart(2, '0');
   return `${y}.${m}.${day}`;
 }
 

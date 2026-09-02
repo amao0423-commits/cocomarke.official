@@ -4,7 +4,7 @@ import { client, formatDate, escapeHtml, cached, mapBlog, type Blog } from '../.
 import { SEO_OVERRIDES } from '../../lib/blogSeoOverrides';
 import { injectGtm } from '../../lib/gtm';
 import { articleSidebar, mobileArticleBanners, SIDEBAR_STYLE, type LatestItem } from '../../lib/blogSidebar';
-import { getIsland, articleEndCta, injectMiniCta, ARTICLE_CTA_CSS, ISLAND_RELATED, subTags, subTagLabels, authorBox } from '../../lib/articleCta';
+import { getIsland, articleEndCta, ARTICLE_CTA_CSS, ISLAND_RELATED, subTags, subTagLabels, authorBox } from '../../lib/articleCta';
 import { catName } from '../../lib/blogList';
 
 const { id } = Astro.params;
@@ -370,7 +370,9 @@ if (bodyHtml) {
   // 本文のmicroCMS画像をWebP化＋幅制限（表示は最大720px幅・retina考慮で880px、非拡大）
   cleanedBody = cleanedBody.replace(/(<img[^>]+src=")(https:\/\/images\.microcms-assets\.io\/[^"?]+)"/g, '$1$2?fm=webp&w=880&q=78&fit=max"');
   // 2つ目の本文段落末にミニCTA（離脱前接触）
-  if (island) cleanedBody = injectMiniCta(cleanedBody, island, id ?? '');
+  // ミニCTA（本文2段落目の後に入る細い帯）は全記事で非表示にした。
+  // 記事末CTAと訴求が重複し、本文の流れを切ってしまうため。
+  // 再開する場合はこの行を戻す: cleanedBody = injectMiniCta(cleanedBody, island, id ?? '');
   // override.faqs が指定されているときだけ本文FAQをストリップして差し替える。
   // 削除範囲はFAQ見出しから「次のH2の直前まで」。末尾まで消すと、FAQの後ろに
   // 「まとめ」等が続く記事でその節ごと本文から消えてしまう。
@@ -513,7 +515,9 @@ const breadcrumbSchema = JSON.stringify({
   ],
 });
 // FAQPage schema: override 記事は手動マップを使用。それ以外は本文「よくある質問」を自動パースして生成。
-// 本文FAQ(microCMS content)構造: <h2>よくある質問</h2> に続く <p><strong>Q…</strong></p><p>回答</p> の繰り返し。
+// 本文FAQの書き方は2種類あるため両方に対応する。
+//   A) <p><strong>Q…</strong></p><p>回答</p>
+//   B) <h3>Q…</h3><p>回答</p>
 function stripFaqTags(s) {
   return s.replace(/<[^>]+>/g, '').replace(/&amp;/g, '&').replace(/\s+/g, ' ').trim();
 }
@@ -521,14 +525,21 @@ function extractBodyFaqs(htmlStr) {
   if (!htmlStr) return [];
   const sec = htmlStr.match(/<h2[^>]*>[^<]*よくある質問[^<]*<\/h2>([\s\S]*?)(?=<h2|$)/i);
   if (!sec) return [];
+  const body = sec[1];
   const faqs = [];
-  const re = /<p>\s*<strong>([\s\S]*?)<\/strong>\s*<\/p>\s*<p>([\s\S]*?)<\/p>/gi;
-  let m;
-  while ((m = re.exec(sec[1])) !== null) {
-    const q = stripFaqTags(m[1]).replace(/^Q\s*[.．:：]?\s*/i, '').trim();
-    const a = stripFaqTags(m[2]).trim();
+  const push = (rawQ, rawA) => {
+    const q = stripFaqTags(rawQ).replace(/^Q\s*\d*\s*[.．:：、]?\s*/i, '').trim();
+    const a = stripFaqTags(rawA).trim();
     if (q && a) faqs.push({ q, a });
-  }
+  };
+  // A) <p><strong>Q…</strong></p><p>回答</p>
+  const reP = /<p>\s*<strong>([\s\S]*?)<\/strong>\s*<\/p>\s*<p>([\s\S]*?)<\/p>/gi;
+  let m;
+  while ((m = reP.exec(body)) !== null) push(m[1], m[2]);
+  if (faqs.length) return faqs;
+  // B) <h3>Q…</h3><p>回答</p>
+  const reH = /<h3[^>]*>([\s\S]*?)<\/h3>\s*<p>([\s\S]*?)<\/p>/gi;
+  while ((m = reH.exec(body)) !== null) push(m[1], m[2]);
   return faqs;
 }
 const faqForSchema = override?.faqs?.length

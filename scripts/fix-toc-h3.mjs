@@ -22,6 +22,28 @@ if (!slugs.length) {
 }
 
 const EXCLUDE = ['この記事でわかること', '目次'];
+
+// 入れ子のリストを含む目次を正しく切り出す。
+// /<(ol|ul)>[\s\S]*?<\/\1>/ だと内側の </ul> で止まり、途中までしか
+// 置換できずに末尾の項目が古いまま残ってしまう。開閉を数えて末尾を求める。
+function findList(html, from = 0) {
+  const open = /<(ol|ul)\b[^>]*>/g;
+  open.lastIndex = from;
+  const m = open.exec(html);
+  if (!m) return null;
+  const tag = m[1];
+  const re = new RegExp(`<${tag}\\b[^>]*>|</${tag}>`, 'g');
+  re.lastIndex = m.index;
+  let depth = 0, t;
+  while ((t = re.exec(html)) !== null) {
+    depth += t[0][1] === '/' ? -1 : 1;
+    if (depth === 0) {
+      return { index: m.index, length: t.index + t[0].length - m.index,
+               html: html.slice(m.index, t.index + t[0].length), tag };
+    }
+  }
+  return null;
+}
 const text = (s) => s.replace(/<[^>]+>/g, '').replace(/&nbsp;/g, ' ').replace(/\s+/g, ' ').trim();
 // FAQ見出しの判定。「Q.」で始まらない質問もあるため、
 // 直近のH2がFAQ系かどうかでも判断する（そちらのほうが取りこぼしが少ない）。
@@ -29,18 +51,29 @@ const isFaqQ = (t) => /^Q\s*\d*\s*[.．、:：]?/.test(t);
 const isFaqH2 = (t) => /よくある質問|FAQ|Q\s*&\s*A|Q＆A/i.test(t);
 
 function build(html) {
-  // 目次＝アンカーを含む最初のリスト
+  // 目次＝アンカーを含む最初のリスト（入れ子を含めて丸ごと取る）
   let toc = null;
-  for (const m of html.matchAll(/<(ol|ul)>[\s\S]*?<\/\1>/g)) {
-    if (m[0].includes('href="#')) { toc = m; break; }
+  for (let pos = 0; ; ) {
+    const l = findList(html, pos);
+    if (!l) break;
+    if (l.html.includes('href="#')) { toc = { index: l.index, 0: l.html }; break; }
+    pos = l.index + l.length;
   }
   // リンクが1つも無い目次（項目が太字テキストだけ等）もあるため、
   // 「目次」見出しの直後のリストも候補として拾う
   if (!toc) {
-    const h = html.match(/<h2[^>]*>[^<]{0,10}目次[^<]{0,10}<\/h2>/);
+    // 「目　次」のように全角スペースが入る表記もあるため間の空白を許容する
+    const h = html.match(/<h2[^>]*>[^<]{0,10}目\s*次[^<]{0,10}<\/h2>/);
     if (h) {
-      const m = html.slice(h.index + h[0].length).match(/^\s*<(ol|ul)>[\s\S]*?<\/\1>/);
-      if (m) { toc = m; toc.index = h.index + h[0].length + m.index; }
+      const after = h.index + h[0].length;
+      const l = findList(html, after);
+      // 目次見出しの直後にリストがある場合のみ採用（離れていたら別物）
+      if (l && html.slice(after, l.index).trim() === '') {
+        toc = { index: l.index, 0: l.html };
+      } else {
+        // 目次見出しはあるがリストが無い場合は、その位置に新しく作る
+        toc = { index: after, 0: '' };
+      }
     }
   }
   if (!toc) return { err: '目次リストが見つかりません' };

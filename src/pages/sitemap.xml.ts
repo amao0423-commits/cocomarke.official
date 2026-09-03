@@ -3,6 +3,11 @@ import { client, mapBlog, mapNews, isoDateJst } from '../lib/microcms';
 
 const BASE = 'https://www.cocomarke.com';
 
+// サイトマップから除外する記事。
+// microCMSで公開終了にしてもAPIキーの権限上、配信APIは返してしまうため明示する。
+// （/blog/lg5qqns998/ は vercel.json で /blog/ へリダイレクトしている）
+const EXCLUDE_BLOG = new Set(['lg5qqns998']);
+
 // microCMS は1回のリクエストで最大100件までのため、全件をたどって取得する。
 // limit:100 のままだと100件を超えた記事がサイトマップから漏れる。
 async function fetchAll(endpoint: string, fields: string, orders: string) {
@@ -32,8 +37,8 @@ export const GET: APIRoute = async () => {
   let categoryEntries: { url: string; lastmod: string; priority: string; changefreq: string }[] = [];
 
   try {
-    const contents = await fetchAll('blogs', 'id,day,publishedAt,updatedAt,updatedDate,category', '-publishedAt');
-    const res = { contents };
+    const all = await fetchAll('blogs', 'id,day,publishedAt,updatedAt,updatedDate,category', '-publishedAt');
+    const res = { contents: all.filter((raw: any) => !EXCLUDE_BLOG.has(raw.id)) };
     blogEntries = res.contents.map((raw: any) => {
       const blog = mapBlog(raw);
       return {

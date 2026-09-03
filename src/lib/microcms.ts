@@ -115,6 +115,14 @@ export function formatDate(iso: string): string {
   return `${y}.${m}.${day}`;
 }
 
+// 構造化データ・サイトマップ用の YYYY-MM-DD。表示（formatDate）と同じく日本時間で切り出す。
+// ISO文字列を単純に slice すると UTC 基準になり、JSTの0時指定が前日になってしまう。
+export function isoDateJst(iso: string | undefined | null): string {
+  if (!iso) return '';
+  const d = new Date(new Date(iso).getTime() + 9 * 60 * 60 * 1000);
+  return d.toISOString().slice(0, 10);
+}
+
 export function escapeHtml(str: string): string {
   return str
     .replace(/&/g, '&amp;')

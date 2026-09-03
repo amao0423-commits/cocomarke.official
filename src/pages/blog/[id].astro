@@ -1,6 +1,6 @@
 ---
 import sampleHtml from '../../../templates/blog/sample/index.html?raw';
-import { client, formatDate, escapeHtml, cached, mapBlog, type Blog } from '../../lib/microcms';
+import { client, formatDate, isoDateJst, escapeHtml, cached, mapBlog, type Blog } from '../../lib/microcms';
 import { SEO_OVERRIDES } from '../../lib/blogSeoOverrides';
 import { injectGtm } from '../../lib/gtm';
 import { articleSidebar, mobileArticleBanners, SIDEBAR_STYLE, type LatestItem } from '../../lib/blogSidebar';
@@ -490,8 +490,9 @@ const articleSchema = JSON.stringify({
     width: blog.eyecatch?.width ?? 1200,
     height: blog.eyecatch?.height ?? 630,
   }],
-  datePublished: (blog.day ?? blog.publishedAt ?? '').slice(0, 10),
-  dateModified: (blog.updatedAt ?? blog.day ?? blog.publishedAt ?? '').slice(0, 10),
+  datePublished: isoDateJst(blog.day ?? blog.publishedAt),
+  // 表示している更新日（CMSの updatedDate）と揃える
+  dateModified: isoDateJst(blog.updatedDate ?? blog.updatedAt ?? blog.day ?? blog.publishedAt),
   author: { '@type': 'Organization', name: 'COCOマーケ', url: 'https://www.cocomarke.com/' },
   publisher: {
     '@type': 'Organization',

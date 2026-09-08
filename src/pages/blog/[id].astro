@@ -1,6 +1,6 @@
 ---
 import sampleHtml from '../../../templates/blog/sample/index.html?raw';
-import { client, formatDate, isoDateJst, escapeHtml, cached, mapBlog, type Blog } from '../../lib/microcms';
+import { client, formatDate, isoDateJst, escapeHtml, cached, mapBlog, fetchAllBlogs, type Blog } from '../../lib/microcms';
 import { SEO_OVERRIDES } from '../../lib/blogSeoOverrides';
 import { injectGtm } from '../../lib/gtm';
 import { articleSidebar, mobileArticleBanners, SIDEBAR_STYLE, type LatestItem } from '../../lib/blogSidebar';
@@ -16,13 +16,7 @@ if (id === 'sample') {
 // 記事取得と関連記事取得を並列実行
 const [rawBlog, recentBlogs] = await Promise.all([
   client.get<any>({ endpoint: 'blogs', contentId: id as string }).catch(() => null),
-  cached<Blog[]>('blogs-related-100', async () => {
-    const res = await client.getList<any>({
-      endpoint: 'blogs',
-      queries: { limit: 100, orders: '-publishedAt', fields: 'id,title,day,publishedAt,eyecatch,category' },
-    });
-    return res.contents.map(mapBlog);
-  }).catch(() => [] as Blog[]),
+  cached<Blog[]>('blogs-list', fetchAllBlogs).catch(() => [] as Blog[]),
 ]);
 
 if (!rawBlog) return Astro.redirect('/blog/');

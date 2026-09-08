@@ -85,6 +85,16 @@
       "source": "/_serverless/:path*",
       "destination": "/",
       "permanent": true
+    },
+    {
+      "source": "/blog/5-s5oy71hd-m",
+      "destination": "/blog/instagram-inbound-tourist-marketing/",
+      "permanent": true
+    },
+    {
+      "source": "/blog/5-s5oy71hd-m/",
+      "destination": "/blog/instagram-inbound-tourist-marketing/",
+      "permanent": true
     }
   ]
 }

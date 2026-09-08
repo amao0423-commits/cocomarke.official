@@ -1,6 +1,6 @@
 ---
 import indexHtml from '../../templates/index.html?raw';
-import { client, formatDate, escapeHtml, cached, mapFaq, mapNews, mapBlog, type Faq, type News, type Blog } from '../lib/microcms';
+import { client, formatDate, escapeHtml, cached, mapFaq, mapNews, fetchAllBlogs, type Faq, type News, type Blog } from '../lib/microcms';
 import { injectGtm } from '../lib/gtm';
 
 const [faqs, newsItems, topBlogs] = await Promise.all([
@@ -12,10 +12,7 @@ const [faqs, newsItems, topBlogs] = await Promise.all([
     const res = await client.getList<any>({ endpoint: 'news', queries: { limit: 100, orders: '-day' } });
     return res.contents.map(mapNews);
   }).catch(() => [] as News[]),
-  cached<Blog[]>('blogs-list', async () => {
-    const res = await client.getList<any>({ endpoint: 'blogs', queries: { limit: 100, orders: '-publishedAt', fields: 'id,title,day,publishedAt,eyecatch,category' } });
-    return res.contents.map(mapBlog);
-  }).catch(() => [] as Blog[]),
+  cached<Blog[]>('blogs-list', fetchAllBlogs).catch(() => [] as Blog[]),
 ]);
 
 let html = indexHtml;

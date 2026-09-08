@@ -1,25 +1,15 @@
 ---
 import blogIndexHtml from '../../../templates/blog/index.html?raw';
-import { client, escapeHtml, cached, mapBlog, type Blog } from '../../lib/microcms';
+import { client, escapeHtml, cached, mapBlog, fetchAllBlogs, sortByPostDate, type Blog } from '../../lib/microcms';
 import { injectGtm } from '../../lib/gtm';
 import { fullSidebar, SIDEBAR_STYLE, LIST_FILTER_JS, type CategoryCount } from '../../lib/blogSidebar';
 import { renderCards, categoryTabs, resultsHeading, searchEmptyState, EMPTY_STATE_CSS, catName } from '../../lib/blogList';
 
 const DEFINED_ORDER = ['運用の基本', 'SNS戦略', '集客', '検索対策', '活用事例', '最新情報'];
 
-const blogs = await cached<Blog[]>('blogs-list', async () => {
-  const res = await client.getList<any>({
-    endpoint: 'blogs',
-    queries: { limit: 100, orders: '-publishedAt', fields: 'id,title,day,publishedAt,eyecatch,category' },
-  });
-  return res.contents.map(mapBlog);
-}).catch(() => [] as Blog[]);
+const blogs = await cached<Blog[]>('blogs-list', fetchAllBlogs).catch(() => [] as Blog[]);
 
-const sorted = [...blogs].sort((a, b) => {
-  const da = a.day ?? a.publishedAt;
-  const db = b.day ?? b.publishedAt;
-  return db.localeCompare(da);
-});
+const sorted = sortByPostDate(blogs);
 
 // カテゴリー一覧（件数つき）
 const catsInUse = new Set<string>();

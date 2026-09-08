@@ -123,6 +123,33 @@ export function isoDateJst(iso: string | undefined | null): string {
   return d.toISOString().slice(0, 10);
 }
 
+// 記事一覧は必ず全件取得する。
+// microCMSは1回のリクエストで最大100件しか返さないため、limit:100 のままだと
+// 記事数が100を超えた時点で古い記事が一覧・カテゴリー件数・関連記事から漏れる。
+// さらに、APIの絞り込みは publishedAt 順・画面の並びは day 順で基準が違うため、
+// 「新しい投稿日の記事が一覧に出てこない」という形で表面化する。
+const BLOG_LIST_FIELDS = 'id,title,day,publishedAt,eyecatch,category';
+
+export async function fetchAllBlogs(fields: string = BLOG_LIST_FIELDS): Promise<Blog[]> {
+  const out: unknown[] = [];
+  for (let offset = 0; ; offset += 100) {
+    const res = await client.getList<any>({
+      endpoint: 'blogs',
+      queries: { limit: 100, offset, orders: '-publishedAt', fields },
+    });
+    out.push(...res.contents);
+    if (out.length >= res.totalCount || !res.contents.length) break;
+  }
+  return (out as any[]).map(mapBlog);
+}
+
+// 一覧の並び順は「投稿日（day）の新しい順」に統一する。
+// day が未設定の記事だけ publishedAt で代用する。
+export function sortByPostDate(blogs: Blog[]): Blog[] {
+  return [...blogs].sort((a, b) =>
+    (b.day ?? b.publishedAt).localeCompare(a.day ?? a.publishedAt));
+}
+
 export function escapeHtml(str: string): string {
   return str
     .replace(/&/g, '&amp;')

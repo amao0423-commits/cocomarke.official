@@ -98,13 +98,13 @@
     },
     {
       "source": "/blog/instagram-followers-quality-active",
-      "destination": "/blog/instagram-ads-follower-growth/",
-      "permanent": true
+      "destination": "/blog/",
+      "permanent": false
     },
     {
       "source": "/blog/instagram-followers-quality-active/",
-      "destination": "/blog/instagram-ads-follower-growth/",
-      "permanent": true
+      "destination": "/blog/",
+      "permanent": false
     }
   ]
 }

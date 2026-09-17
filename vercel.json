@@ -95,16 +95,6 @@
       "source": "/blog/5-s5oy71hd-m/",
       "destination": "/blog/instagram-inbound-tourist-marketing/",
       "permanent": true
-    },
-    {
-      "source": "/blog/instagram-followers-quality-active",
-      "destination": "/blog/",
-      "permanent": false
-    },
-    {
-      "source": "/blog/instagram-followers-quality-active/",
-      "destination": "/blog/",
-      "permanent": false
     }
   ]
 }

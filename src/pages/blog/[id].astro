@@ -20,6 +20,9 @@ const [rawBlog, recentBlogs] = await Promise.all([
 ]);
 
 if (!rawBlog) return Astro.redirect('/blog/');
+// 配信APIは下書き・公開終了の記事も返すため、一覧に載っている＝公開中かで判定する。
+// （recentBlogs は fetchAllBlogs 側で公開中だけに絞り込み済み）
+if (recentBlogs.length && !recentBlogs.some(b => b.id === id)) return Astro.redirect('/blog/');
 const blog = mapBlog(rawBlog);
 
 // 右サイドバー「最新記事」用：新着3件（現記事は除外）

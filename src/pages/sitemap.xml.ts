@@ -1,5 +1,5 @@
 import type { APIRoute } from 'astro';
-import { client, mapBlog, mapNews, isoDateJst } from '../lib/microcms';
+import { client, mapBlog, mapNews, isoDateJst, fetchPublishedBlogIds } from '../lib/microcms';
 
 const BASE = 'https://www.cocomarke.com';
 
@@ -38,7 +38,12 @@ export const GET: APIRoute = async () => {
 
   try {
     const all = await fetchAll('blogs', 'id,day,publishedAt,updatedAt,updatedDate,category', '-publishedAt');
-    const res = { contents: all.filter((raw: any) => !EXCLUDE_BLOG.has(raw.id)) };
+    // 配信APIは下書き・公開終了の記事も返すため、公開中のIDだけに絞る。
+    const published = await fetchPublishedBlogIds();
+    const res = {
+      contents: all.filter((raw: any) =>
+        !EXCLUDE_BLOG.has(raw.id) && (!published || published.has(raw.id))),
+    };
     blogEntries = res.contents.map((raw: any) => {
       const blog = mapBlog(raw);
       return {

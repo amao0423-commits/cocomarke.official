@@ -130,6 +130,34 @@ export function isoDateJst(iso: string | undefined | null): string {
 // 「新しい投稿日の記事が一覧に出てこない」という形で表面化する。
 const BLOG_LIST_FIELDS = 'id,title,day,publishedAt,eyecatch,category';
 
+// 配信APIキーに「下書き全取得」権限が付いているため、配信APIは下書き・公開終了の
+// 記事もそのまま返してしまう（＝CMSで下書きにしてもサイトに出る）。権限を外せないので、
+// 管理APIから公開中のIDを取得して配信APIの結果を絞り込む。
+// 管理APIが落ちている・レート制限にかかった場合は null を返し、絞り込みを行わない
+// （記事一覧が丸ごと空になるほうが実害が大きいため、フェイルオープンにする）。
+// closedAt は再公開後も値が残るため判定には使わず、status だけを見る。
+export async function fetchPublishedBlogIds(): Promise<Set<string> | null> {
+  try {
+    const ids = new Set<string>();
+    for (let offset = 0; ; offset += 100) {
+      const res = await fetch(
+        `https://cocomarke.microcms-management.io/api/v1/contents/blogs?limit=100&offset=${offset}`,
+        { headers: { 'X-MICROCMS-API-KEY': import.meta.env.MICROCMS_API_KEY } },
+      );
+      if (!res.ok) return null;
+      const json = await res.json();
+      for (const c of json.contents ?? []) {
+        if (Array.isArray(c.status) && c.status.includes('PUBLISH')) ids.add(c.id);
+      }
+      const seen = offset + (json.contents?.length ?? 0);
+      if (seen >= (json.totalCount ?? 0) || !json.contents?.length) break;
+    }
+    return ids.size ? ids : null;
+  } catch {
+    return null;
+  }
+}
+
 export async function fetchAllBlogs(fields: string = BLOG_LIST_FIELDS): Promise<Blog[]> {
   const out: unknown[] = [];
   for (let offset = 0; ; offset += 100) {
@@ -140,7 +168,9 @@ export async function fetchAllBlogs(fields: string = BLOG_LIST_FIELDS): Promise<
     out.push(...res.contents);
     if (out.length >= res.totalCount || !res.contents.length) break;
   }
-  return (out as any[]).map(mapBlog);
+  const published = await fetchPublishedBlogIds();
+  const list = published ? (out as any[]).filter((c) => published.has(c.id)) : (out as any[]);
+  return list.map(mapBlog);
 }
 
 // 一覧の並び順は「投稿日（day）の新しい順」に統一する。

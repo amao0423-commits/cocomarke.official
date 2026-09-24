@@ -158,6 +158,24 @@ export async function fetchPublishedBlogIds(): Promise<Set<string> | null> {
   }
 }
 
+// 1記事だけ公開中かを管理APIで直接確認する。
+// 一覧は10分キャッシュしているため、公開直後やスラッグ変更直後の記事は
+// キャッシュに載っておらず「存在しない」と誤判定される。その取りこぼしを拾う用途。
+// 判定できなかった場合は true（公開扱い）を返し、記事を開けなくしない。
+export async function isBlogPublished(id: string): Promise<boolean> {
+  try {
+    const res = await fetch(
+      `https://cocomarke.microcms-management.io/api/v1/contents/blogs/${encodeURIComponent(id)}`,
+      { headers: { 'X-MICROCMS-API-KEY': import.meta.env.MICROCMS_API_KEY } },
+    );
+    if (!res.ok) return true;
+    const json = await res.json();
+    return Array.isArray(json.status) ? json.status.includes('PUBLISH') : true;
+  } catch {
+    return true;
+  }
+}
+
 export async function fetchAllBlogs(fields: string = BLOG_LIST_FIELDS): Promise<Blog[]> {
   const out: unknown[] = [];
   for (let offset = 0; ; offset += 100) {

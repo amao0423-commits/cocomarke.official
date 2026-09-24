@@ -1,6 +1,6 @@
 ---
 import sampleHtml from '../../../templates/blog/sample/index.html?raw';
-import { client, formatDate, isoDateJst, escapeHtml, cached, mapBlog, fetchAllBlogs, type Blog } from '../../lib/microcms';
+import { client, formatDate, isoDateJst, escapeHtml, cached, mapBlog, fetchAllBlogs, isBlogPublished, type Blog } from '../../lib/microcms';
 import { SEO_OVERRIDES } from '../../lib/blogSeoOverrides';
 import { injectGtm } from '../../lib/gtm';
 import { articleSidebar, mobileArticleBanners, SIDEBAR_STYLE, type LatestItem } from '../../lib/blogSidebar';
@@ -20,9 +20,12 @@ const [rawBlog, recentBlogs] = await Promise.all([
 ]);
 
 if (!rawBlog) return Astro.redirect('/blog/');
-// 配信APIは下書き・公開終了の記事も返すため、一覧に載っている＝公開中かで判定する。
-// （recentBlogs は fetchAllBlogs 側で公開中だけに絞り込み済み）
-if (recentBlogs.length && !recentBlogs.some(b => b.id === id)) return Astro.redirect('/blog/');
+// 配信APIは下書き・公開終了の記事も返すため、公開中かどうかを別途確認する。
+// まず一覧（公開中だけに絞り込み済み）にあるかを見て、無い場合だけ管理APIへ問い合わせる。
+// 一覧は10分キャッシュのため、公開直後やスラッグ変更直後の記事がここで弾かれないようにする。
+if (recentBlogs.length && !recentBlogs.some(b => b.id === id)) {
+  if (!(await isBlogPublished(id as string))) return Astro.redirect('/blog/');
+}
 const blog = mapBlog(rawBlog);
 
 // 右サイドバー「最新記事」用：新着3件（現記事は除外）

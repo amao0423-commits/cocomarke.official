@@ -39,7 +39,7 @@ export const POST: APIRoute = async ({ request }) => {
   const email = str(data.email);
   const tel = str(data.tel);
   const message = str(data.message);
-  const plan = str(data.plan) || 'アカウント上位表示（月額30,000円〜／税別）';
+  const plan = str(data.plan) || 'アカウント上位表示（月額10,000円〜／税別）';
   const website = str(data.website); // ハニーポット
   const eventId = str(data.event_id);
   const options = Array.isArray(data.option)
